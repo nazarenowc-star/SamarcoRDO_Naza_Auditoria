@@ -1,0 +1,3348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SamarcoRDO - Naza Auditoria</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- XLSX -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- jsPDF para gerar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas para capturar imagens -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #003A6B;
+            --primary-dark: #002B4F;
+            --secondary: #00A3AD;
+            --accent: #FF6B35;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray: #6c757d;
+            --border: #dee2e6;
+            --bg: #f0f4f8;
+        }
+
+        body {
+            background-color: var(--bg);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Topbar */
+        .topbar {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 0.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .brand span {
+            color: var(--secondary);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.1);
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+
+        .user-chip img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--secondary);
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        /* Layout Principal */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: white;
+            border-right: 1px solid var(--border);
+            padding: 1.5rem 0;
+            overflow-y: auto;
+        }
+
+        .menu-item {
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--gray);
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .menu-item i {
+            width: 24px;
+        }
+
+        .menu-item:hover {
+            background: #e8f0fe;
+            color: var(--primary);
+        }
+
+        .menu-item.active {
+            border-left-color: var(--secondary);
+            background: linear-gradient(90deg, #e8f4f5, white);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .submenu {
+            margin-left: 40px;
+        }
+
+        .submenu .menu-item {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Conteúdo */
+        .content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .card-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        /* Grid */
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-card h3 {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Formulários */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--gray);
+            margin-bottom: 0.3rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        /* Botões */
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: #e8f0fe;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Tabelas */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8fafc;
+            padding: 0.8rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 1100;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Search */
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box input, .search-box select {
+            min-width: 150px;
+        }
+
+        /* Preview de Fotos */
+        .fotos-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .foto-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .foto-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .foto-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .foto-item .foto-delete {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 10;
+        }
+
+        .foto-item .foto-delete:hover {
+            background: #c82333;
+        }
+
+        .pdf-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .pdf-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .pdf-item:hover {
+            background: var(--light);
+        }
+
+        .date-filter {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .search-box {
+                flex-direction: column;
+            }
+            .search-box input, .search-box select {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="brand">
+            <div><h1>Samarco<span>RDO</span></h1><span style="font-size:0.9rem;opacity:.9;font-weight:600;display:block;margin-top:2px;">NAZA Auditoria</span></div>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-bell icon-btn"></i>
+            <div class="user-chip" id="userMenu">
+                <img src="https://ui-avatars.com/api/?name=Admin+User&background=00A3AD&color=fff&size=32" alt="User">
+                <span id="userName">NAZA Auditoria</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="menu-item active" data-view="dashboard">
+                <i class="fas fa-chart-pie"></i> Dashboard
+            </div>
+            <div class="menu-item" data-view="rdo">
+                <i class="fas fa-file-alt"></i> RDO
+            </div>
+            <div class="submenu">
+                <div class="menu-item" data-view="rdo-list">
+                    <i class="fas fa-list"></i> Lista de RDOs
+                </div>
+                <div class="menu-item" data-view="rdo-novo">
+                    <i class="fas fa-plus"></i> Novo RDO
+                </div>
+            </div>
+            <div class="menu-item" data-view="cadastros">
+                <i class="fas fa-database"></i> Cadastros
+            </div>
+            <div class="submenu">
+                <div class="menu-item" data-view="obras">
+                    <i class="fas fa-building"></i> Obras
+                </div>
+                <div class="menu-item" data-view="tarefas">
+                    <i class="fas fa-tasks"></i> Tarefas/EAP
+                </div>
+                <div class="menu-item" data-view="cargos">
+                    <i class="fas fa-briefcase"></i> Cargos
+                </div>
+                <div class="menu-item" data-view="efetivo">
+                    <i class="fas fa-users"></i> Efetivo
+                </div>
+                <div class="menu-item" data-view="equipamentos">
+                    <i class="fas fa-tools"></i> Equipamentos
+                </div>
+            </div>
+            <div class="menu-item" data-view="relatorios">
+                <i class="fas fa-chart-bar"></i> Relatórios
+            </div>
+            <div class="menu-item" data-view="backup">
+                <i class="fas fa-cloud-upload-alt"></i> Backup
+            </div>
+            <div class="menu-item" data-view="config">
+                <i class="fas fa-cog"></i> Configurações
+            </div>
+        </div>
+
+        <!-- Conteúdo Principal -->
+        <div class="content" id="mainContent">
+            <!-- Conteúdo será carregado dinamicamente -->
+        </div>
+    </div>
+
+    <!-- Modal para Cadastros -->
+    <div class="modal" id="modalCadastro">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Novo Cadastro</h3>
+                <i class="fas fa-times" style="cursor:pointer" onclick="closeModal()"></i>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Conteúdo dinâmico -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveCadastro()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Seleção de PDF -->
+    <div class="modal" id="modalPDF">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Selecionar RDOs para PDF</h3>
+                <i class="fas fa-times" style="cursor:pointer" onclick="closePDFModal()"></i>
+            </div>
+            <div class="modal-body">
+                <div class="date-filter">
+                    <input type="date" id="pdfDataInicio" class="form-control" placeholder="Data Início">
+                    <input type="date" id="pdfDataFim" class="form-control" placeholder="Data Fim">
+                    <button class="btn btn-secondary" onclick="filtrarRDOsPDF()">Filtrar</button>
+                </div>
+                <div id="pdfSelectorList" class="pdf-selector">
+                    <!-- Lista de RDOs será carregada aqui -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePDFModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="gerarPDFSelecionados()">Gerar PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Operação realizada com sucesso!</span>
+    </div>
+
+    <script>
+        // ==================== BANCO DE DADOS ====================
+
+// ==================== ARMAZENAMENTO (localStorage + IndexedDB) ====================
+// Motivo: evitar QuotaExceeded no localStorage quando o banco crescer (RDOs + fotos/anexos etc.)
+const DB_KEY = "SAMARCO_RDO_DB_V2";
+const LS_USE_IDB = "SAMARCO_RDO_USE_IDB_V1";
+const IDB_DBNAME = "SAMARCO_RDO_DB";
+const IDB_STORE_MAIN = "main";
+const IDB_KEY_MAIN = "db";
+
+// === LocalStorage SAFE (Edge Tracking Prevention pode bloquear Storage em file:// ou contextos restritos) ===
+const LS_SAFE = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+// Preferir IndexedDB sempre (evita "QuotaExceededError" e funciona com muitas fotos/dados)
+(function forceIdbFlag(){
+  // se localStorage estiver bloqueado, LS_SAFE.set retorna false e seguimos mesmo assim usando IDB
+  LS_SAFE.set(LS_USE_IDB,"1");
+})();
+
+
+function defaultDb(){
+    return { obras:[], tarefas:[], cargos:[], efetivo:[], equipamentos:[], usuarios:[], paralisacoes:[], rdos:[], supabase:{url:'',key:'',enabled:false} };
+}
+
+function idbOpen(){
+    return new Promise((resolve,reject)=>{
+        const req = indexedDB.open(IDB_DBNAME, 2);
+        req.onupgradeneeded = ()=> {
+            const db=req.result;
+            if(!db.objectStoreNames.contains(IDB_STORE_MAIN)){
+                db.createObjectStore(IDB_STORE_MAIN, { keyPath:"k" });
+            }
+            if(!db.objectStoreNames.contains("files")){
+                db.createObjectStore("files", { keyPath:"k" });
+            }
+        };
+        req.onsuccess=()=>resolve(req.result);
+        req.onerror=()=>reject(req.error);
+    });
+}
+
+async function idbGet(){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+        const tx=db.transaction(IDB_STORE_MAIN,"readonly");
+        const req=tx.objectStore(IDB_STORE_MAIN).get(IDB_KEY_MAIN);
+        req.onsuccess = ()=> resolve(req.result ? req.result.v : null);
+        req.onerror = ()=> reject(req.error);
+    });
+}
+
+async function idbSet(val){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+        const tx=db.transaction(IDB_STORE_MAIN,"readwrite");
+        tx.objectStore(IDB_STORE_MAIN).put({k:IDB_KEY_MAIN, v:val, savedAt:new Date().toISOString()});
+        tx.oncomplete=()=> resolve(true);
+        tx.onerror=()=> reject(tx.error);
+    });
+}
+
+function safeJsonParse(raw){
+    try{ return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+
+function loadDbSync(){
+    // Se já está em modo IDB, devolve default e o bootstrap assíncrono substitui.
+    const useIdb = (LS_SAFE.get(LS_USE_IDB)=== "1") || (LS_SAFE.get(LS_USE_IDB)===null);
+    if(useIdb) return defaultDb();
+    const raw = LS_SAFE.get(DB_KEY);
+    const parsed = safeJsonParse(raw);
+    return (parsed && parsed.rdos && parsed.obras) ? parsed : defaultDb();
+}
+
+function saveDb(){
+    try{
+        const useIdb = (LS_SAFE.get(LS_USE_IDB)=== "1") || (LS_SAFE.get(LS_USE_IDB)===null);
+        if(useIdb){
+            idbSet(DB).catch(()=>{});
+            return;
+        }
+        LS_SAFE.set(DB_KEY, JSON.stringify(DB));
+    }catch(e){
+        if(String(e).includes("QuotaExceeded")){
+            // Migra automaticamente para IndexedDB
+            LS_SAFE.set(LS_USE_IDB,"1");
+            LS_SAFE.del(DB_KEY);
+            idbSet(DB).then(()=> showToast("Base grande: migrei para IndexedDB (sem limite de 5MB)."))
+                       .catch(()=> showToast("Falha ao migrar base. Faça Backup JSON.", "error"));
+            return;
+        }
+        console.error(e);
+        throw e;
+    }
+}
+
+
+        let DB = loadDbSync();
+// garante campos novos em bases antigas
+DB.obras ||= []; DB.tarefas ||= []; DB.cargos ||= []; DB.efetivo ||= []; DB.equipamentos ||= []; DB.usuarios ||= []; DB.paralisacoes ||= []; DB.rdos ||= [];
+DB.supabase ||= {url:'',key:'',enabled:false};
+
+        // Carregar dados (bootstrap IDB quando necessário)
+async function bootstrapDb(){
+    try{
+        const useIdb = (LS_SAFE.get(LS_USE_IDB)=== "1") || (LS_SAFE.get(LS_USE_IDB)===null);
+        if(useIdb){
+            const loaded = await idbGet();
+            if(loaded && loaded.rdos && loaded.obras){
+                DB.obras = loaded.obras||[];
+                DB.tarefas = loaded.tarefas||[];
+                DB.cargos = loaded.cargos||[];
+                DB.efetivo = loaded.efetivo||[];
+                DB.equipamentos = loaded.equipamentos||[];
+                DB.rdos = loaded.rdos||[];
+            }
+        }else{
+            // já carregou via loadDbSync
+        }
+    }catch(e){
+        console.warn("Falha bootstrap DB:", e);
+    }
+}
+
+// Salvar dados (unificado e com migração automática)
+function persist(){
+    saveDb();
+}
+
+// Dados iniciais
+
+        function initData() {
+            if (DB.obras.length === 0) {
+                DB.obras.push({
+                    id: Date.now(),
+                    sigla: 'VDR1',
+                    nome: 'Quadro Geral - VDR1',
+                    gestor: 'João Silva',
+                    cliente: 'SAMARCO',
+                    inicio: '2025-01-01',
+                    termino: '2025-05-31'
+                });
+            }
+            
+            if (DB.tarefas.length === 0) {
+                DB.tarefas.push(
+                    { id: Date.now() + 1, codigo: 'MEC.001', descricao: 'Inspeção Mecânica - Bomba', unidade: 'UN', ativo: true },
+                    { id: Date.now() + 2, codigo: 'ELE.001', descricao: 'Inspeção Elétrica - Painel', unidade: 'UN', ativo: true },
+                    { id: Date.now() + 3, codigo: 'LUB.001', descricao: 'Lubrificação - Redutor', unidade: 'UN', ativo: true }
+                );
+            }
+            
+            persist();
+        }
+
+        // ==================== UTILITÁRIOS ====================
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            toastMsg.textContent = message;
+            toast.style.background = type === 'success' ? 'var(--primary)' : 'var(--danger)';
+            toast.style.display = 'flex';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        function formatDate(date) {
+            if (!date) return '';
+            return new Date(date).toLocaleDateString('pt-BR');
+        }
+
+        function statusLabel(st){
+            const s = st || 'incorrido';
+            if(s==='incorrido') return 'Incorrido';
+            if(s==='conferido') return 'Conferido';
+            if(s==='consolidado') return 'Consolidado';
+            if(s==='aprovado') return 'Aprovado';
+            return s;
+        }
+        function statusBadgeClass(st){
+            const s = st || 'incorrido';
+            if(s==='aprovado') return 'success';
+            if(s==='consolidado') return 'info';
+            if(s==='conferido') return 'warning';
+            return 'danger';
+        }
+        const STATUS_ORDER = ['incorrido','conferido','consolidado','aprovado'];
+        const TECNICA_RESPONSAVEL = 'Millena Gomes Lucas Xavier Silva';
+        const ENGENHEIRA_RESPONSAVEL = 'Annehele Narjara Narrimam Lima Da Silva';
+        function statusGte(a,b){
+            return STATUS_ORDER.indexOf(a||'incorrido') >= STATUS_ORDER.indexOf(b||'incorrido');
+        }
+        function getFixedSignerForStatus(status){
+            if(status === 'conferido') return TECNICA_RESPONSAVEL;
+            if(status === 'consolidado') return ENGENHEIRA_RESPONSAVEL;
+            return '';
+        }
+        function refreshWorkflowSignerFields(status){
+            const input = document.getElementById('wfSigner');
+            const helper = document.getElementById('wfSignerHelp');
+            if(!input) return;
+            const fixed = getFixedSignerForStatus(status);
+            if(fixed){
+                input.value = fixed;
+                input.readOnly = true;
+                input.style.background = '#eef4fb';
+                if(helper){
+                    helper.innerHTML = status === 'conferido'
+                        ? `<strong>Autorização técnica:</strong> ${TECNICA_RESPONSAVEL}`
+                        : `<strong>Aprovação exclusiva:</strong> ${ENGENHEIRA_RESPONSAVEL}`;
+                }
+            }else{
+                input.readOnly = false;
+                input.style.background = '#fff';
+                if(helper){
+                    helper.innerHTML = 'Na etapa <strong>Incorrido</strong>, a assinatura é do solicitante e pode ser qualquer responsável pelo registro.';
+                }
+            }
+        }
+        function getSelectedBackupRdoIds(){
+            return [...document.querySelectorAll('.backup-rdo-checkbox:checked')].map(el => String(el.value));
+        }
+        function toggleAllBackupRdos(checked){
+            document.querySelectorAll('.backup-rdo-checkbox').forEach(el => el.checked = !!checked);
+            updateBackupSelectionInfo();
+        }
+        function updateBackupSelectionInfo(){
+            const box = document.getElementById('backupSelectionInfo');
+            if(!box) return;
+            const total = DB.rdos.length;
+            const sel = getSelectedBackupRdoIds().length;
+            box.textContent = `${sel} de ${total} RDO(s) selecionado(s) para exportação.`;
+        }
+
+        
+
+// ==================== BACKUP JSON (sem servidor) ====================
+function exportBackupJson(){
+    try{
+        const blob = new Blob([JSON.stringify(DB,null,2)], {type:"application/json"});
+        const a=document.createElement("a");
+        a.href=URL.createObjectURL(blob);
+        a.download=`SAMARCO_RDO_BACKUP_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        showToast("Backup JSON exportado.");
+    }catch(e){
+        console.error(e);
+        showToast("Falha ao exportar backup.", "error");
+    }
+}
+
+function importBackupJsonFile(file){
+    return new Promise((resolve,reject)=>{
+        const fr=new FileReader();
+        fr.onload=()=>{
+            try{
+                const data = JSON.parse(fr.result);
+                if(!data || !data.rdos || !data.obras){ throw new Error("Formato inválido"); }
+                DB.obras = data.obras||[];
+                DB.tarefas = data.tarefas||[];
+                DB.cargos = data.cargos||[];
+                DB.efetivo = data.efetivo||[];
+                DB.equipamentos = data.equipamentos||[];
+                DB.rdos = data.rdos||[];
+                persist();
+                resolve(true);
+            }catch(e){ reject(e); }
+        };
+        fr.onerror=()=>reject(fr.error);
+        fr.readAsText(file);
+    });
+}
+// ==================== NAVEGAÇÃO ====================
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                
+                const view = this.dataset.view;
+                loadView(view);
+            });
+        });
+
+        function loadView(view) {
+            const content = document.getElementById('mainContent');
+            
+            switch(view) {
+                case 'dashboard':
+                    renderDashboard(content);
+                    break;
+                case 'rdo-list':
+                    renderRdoList(content);
+                    break;
+                case 'rdo-novo':
+                    renderRdoForm(content, null);
+                    break;
+                case 'obras':
+                    renderObras(content);
+                    break;
+                case 'tarefas':
+                    renderTarefas(content);
+                    break;
+                case 'cargos':
+                    renderCargos(content);
+                    break;
+                case 'efetivo':
+                    renderEfetivo(content);
+                    break;
+                case 'equipamentos':
+                    renderEquipamentos(content);
+                    break;
+                case 'relatorios':
+                    renderRelatorios(content);
+                    break;
+                case 'backup':
+                    renderBackup(content);
+                    break;
+                case 'config':
+                    renderConfig(content);
+                    break;
+                default:
+                    renderDashboard(content);
+            }
+        }
+
+        // ==================== DASHBOARD ====================
+        function renderDashboard(container) {
+            const totalRdos = DB.rdos.length;
+            const aprovados = DB.rdos.filter(r => r.status === 'aprovado').length;
+            const incorridos = DB.rdos.filter(r => (r.status||'incorrido') === 'incorrido').length;
+            const conferidos = DB.rdos.filter(r => r.status === 'conferido').length;
+            const consolidados = DB.rdos.filter(r => r.status === 'consolidado').length;
+            
+            let html = `
+                <h2 style="margin-bottom: 1.5rem;">Dashboard</h2>
+                
+                <div class="grid-4">
+                    <div class="stat-card">
+                        <h3>Total de RDOs</h3>
+                        <div class="number">${totalRdos}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Aprovados</h3>
+                        <div class="number">${aprovados}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Consolidados</h3>
+                        <div class="number">${consolidados}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Incorridos</h3>
+                        <div class="number">${incorridos}</div>
+                    </div>
+                </div>
+
+                <div class="date-filter">
+                    <input type="date" id="dashboardDataInicio" class="form-control" placeholder="Data Início" style="width: auto;">
+                    <input type="date" id="dashboardDataFim" class="form-control" placeholder="Data Fim" style="width: auto;">
+                    <button class="btn btn-secondary" onclick="filtrarDashboard()">Filtrar</button>
+                    <button class="btn btn-primary" onclick="gerarRelatorioPDF()">Gerar PDF</button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Status dos RDOs</h3>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="chartStatus" style="height: 250px;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Últimos RDOs</h3>
+                        </div>
+                        <div class="card-body">
+                            <table style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Número</th>
+                                        <th>Data</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${DB.rdos.slice(-5).reverse().map(r => `
+                                        <tr>
+                                            <td>${r.numero || '---'}</td>
+                                            <td>${formatDate(r.data)}</td>
+                                            <td><span class="badge badge-${statusBadgeClass(r.status)}">${statusLabel(r.status)}</span></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+            
+            // Criar gráfico
+            setTimeout(() => {
+                const ctx = document.getElementById('chartStatus')?.getContext('2d');
+                if (ctx) {
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Aprovados', 'Consolidados', 'Conferidos', 'Incorridos'],
+                            datasets: [{
+                                data: [aprovados, consolidados, conferidos, incorridos],
+                                backgroundColor: ['#28a745', '#17a2b8', '#ffc107', '#dc3545']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                }
+            }, 100);
+        }
+
+        // ==================== RELATÓRIOS ====================
+        function renderRelatorios(container) {
+            container.innerHTML = `
+                <h2 style="margin-bottom: 1.5rem;">Relatórios</h2>
+                
+                <div class="card" style="margin-bottom: 1rem;">
+                    <div class="card-header">
+                        <h3>Filtros</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Data Início</label>
+                                <input type="date" class="form-control" id="relDataInicio">
+                            </div>
+                            <div class="form-group">
+                                <label>Data Fim</label>
+                                <input type="date" class="form-control" id="relDataFim">
+                            </div>
+                            <div class="form-group">
+                                <label>Obra</label>
+                                <select class="form-control" id="relObra">
+                                    <option value="">Todas</option>
+                                    ${DB.obras.map(o => `<option value="${o.id}">${o.sigla} - ${o.nome}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Status</label>
+                                <select class="form-control" id="relStatus">
+                                    <option value="">Todos</option>
+                                    <option value="incorrido">Incorrido</option>
+                                    <option value="conferido">Conferido</option>
+                                    <option value="consolidado">Consolidado</option>
+                                    <option value="aprovado">Aprovado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="gerarRelatorioPDFFiltrado()">
+                            <i class="fas fa-file-pdf"></i> Gerar PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Selecionar RDOs para PDF</h3>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-success" onclick="abrirSeletorPDF()">
+                            <i class="fas fa-check-square"></i> Selecionar RDOs
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== RDO ====================
+        function renderRdoList(container) {
+            let html = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px;">
+                    <h2>Lista de RDOs</h2>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-success" onclick="abrirSeletorPDF()">
+                            <i class="fas fa-file-pdf"></i> Gerar PDF
+                        </button>
+                        <button class="btn btn-primary" onclick="loadView('rdo-novo')">
+                            <i class="fas fa-plus"></i> Novo RDO
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="search-box">
+                    <input type="text" id="searchRdo" placeholder="Buscar RDO..." onkeyup="filterRdos()">
+                    <select id="filterStatusRdo" class="form-control" style="width: auto;" onchange="filterRdos()">
+                        <option value="">Todos os status</option>
+                        <option value="incorrido">Incorrido</option>
+                        <option value="conferido">Conferido</option>
+                        <option value="consolidado">Consolidado</option>
+                        <option value="aprovado">Aprovado</option>
+                    </select>
+                    <input type="date" id="filterDataInicio" class="form-control" style="width: auto;" onchange="filterRdos()" placeholder="Data Início">
+                    <input type="date" id="filterDataFim" class="form-control" style="width: auto;" onchange="filterRdos()" placeholder="Data Fim">
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Número</th>
+                                <th>Data</th>
+                                <th>Obra</th>
+                                <th>Responsável</th>
+                                <th>Status</th>
+                                <th>Fotos</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rdoTableBody">
+                            ${DB.rdos.slice().reverse().map(r => {
+                                const obra = DB.obras.find(o => o.id === r.obraId);
+                                const qtdFotos = (r.photos || []).length;
+                                return `
+                                    <tr>
+                                        <td>${r.numero || '---'}</td>
+                                        <td>${formatDate(r.data)}</td>
+                                        <td>${obra ? obra.sigla : '---'}</td>
+                                        <td>${r.responsavel || '---'}</td>
+                                        <td><span class="badge badge-${statusBadgeClass(r.status)}">${statusLabel(r.status)}</span></td>
+                                        <td>${qtdFotos > 0 ? `<i class="fas fa-image" style="color: var(--primary);"></i> ${qtdFotos}` : '---'}</td>
+                                        <td>
+                                            <i class="fas fa-edit action-icon" style="margin-right: 10px; cursor: pointer;" onclick="editRdo(${r.id})"></i>
+                                            <i class="fas fa-trash action-icon" style="margin-right: 10px; cursor: pointer; color: var(--danger);" onclick="deleteRdo(${r.id})"></i>
+                                            <i class="fas fa-file-pdf action-icon" style="cursor: pointer; color: var(--primary);" onclick="gerarPDFUnico(${r.id})"></i>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        function renderRdoForm(container, rdoId) {
+            const rdo = rdoId ? DB.rdos.find(r => r.id == rdoId) : null;
+            
+            // Inicializar WF_CURRENT_RDO_ID
+            WF_CURRENT_RDO_ID = rdo ? rdo.id : null;
+            
+            let html = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px;">
+                    <h2>${rdo ? 'Editar' : 'Novo'} RDO</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="loadView('rdo-list')">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </button>
+                        <button class="btn btn-primary" onclick="saveRdo()">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <form id="rdoForm">
+                            <input type="hidden" id="rdoId" value="${rdo ? rdo.id : ''}">
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Número do RDO</label>
+                                    <input type="text" class="form-control" id="rdoNumero" value="${rdo ? rdo.numero || '' : ''}" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Data</label>
+                                    <input type="date" class="form-control" id="rdoData" value="${rdo ? rdo.data || '' : new Date().toISOString().split('T')[0]}" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Obra</label>
+                                    <select class="form-control" id="rdoObra" required>
+                                        <option value="">Selecione...</option>
+                                        ${DB.obras.map(o => `
+                                            <option value="${o.id}" ${rdo && rdo.obraId == o.id ? 'selected' : ''}>${o.sigla} - ${o.nome}</option>
+                                        `).join('')}
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Responsável</label>
+                                    <input type="text" class="form-control" id="rdoResponsavel" value="${rdo ? rdo.responsavel || '' : ''}">
+                                </div>
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Hora Início</label>
+                                    <input type="time" class="form-control" id="rdoHoraInicio" value="${rdo ? rdo.horaInicio || '07:00' : '07:00'}">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Hora Fim</label>
+                                    <input type="time" class="form-control" id="rdoHoraFim" value="${rdo ? rdo.horaFim || '17:00' : '17:00'}">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Status</label>
+                                    <select class="form-control" id="rdoStatus" onchange="atualizarStatusWF()" disabled title="O status é controlado apenas pelo workflow de assinaturas">
+                                        <option value="incorrido" ${(!rdo || rdo.status === 'incorrido') ? 'selected' : ''}>Incorrido</option>
+                                        <option value="conferido" ${rdo && rdo.status === 'conferido' ? 'selected' : ''}>Conferido</option>
+                                        <option value="consolidado" ${rdo && rdo.status === 'consolidado' ? 'selected' : ''}>Consolidado</option>
+                                        <option value="aprovado" ${rdo && rdo.status === 'aprovado' ? 'selected' : ''}>Aprovado</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Descrição das Atividades</label>
+                                <textarea class="form-control" id="rdoDescricao" rows="4">${rdo ? rdo.descricao || '' : ''}</textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Observações</label>
+                                <textarea class="form-control" id="rdoObservacoes" rows="3">${rdo ? rdo.observacoes || '' : ''}</textarea>
+                            </div>
+                            
+                            <h3 style="margin: 1.5rem 0 1rem;">Atividades Realizadas</h3>
+                            <div id="atividadesContainer">
+                                ${[1,2,3].map((n, i) => `
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label>Atividade ${n}</label>
+                                            <select class="form-control" id="rdoAtividade${n}">
+                                                <option value="">Selecione...</option>
+                                                ${DB.tarefas.map(t => `
+                                                    <option value="${t.id}" ${rdo && rdo[`atividade${n}`] == t.id ? 'selected' : ''}>${t.codigo} - ${t.descricao}</option>
+                                                `).join('')}
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Quantidade</label>
+                                            <input type="number" class="form-control" id="rdoQtd${n}" value="${rdo ? rdo[`qtd${n}`] || '' : ''}">
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <h3 style="margin: 1.5rem 0 1rem;">Anexos e Evidências</h3>
+                            <div class="form-group">
+                                <label>Fotos / Arquivos</label>
+                                <input type="file" class="form-control" id="rdoFotos" multiple accept="image/*,application/pdf">
+                                <small style="color:var(--gray);display:block;margin-top:6px;">As fotos ficam salvas no IndexedDB (não estoura quota).</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Pré-visualização</label>
+                                <div id="rdoFotosPreview" class="fotos-preview-container"></div>
+                            </div>
+
+                            <h3 style="margin: 1.5rem 0 1rem;">Workflow e Assinaturas</h3>
+                            <div class="card" style="border:1px dashed var(--border);padding:12px;border-radius:12px;">
+                                <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;">
+                                    <div>
+                                        <span class="badge badge-${statusBadgeClass(rdo ? rdo.status : 'incorrido')}" id="wfBadge">${statusLabel(rdo ? rdo.status : 'incorrido')}</span>
+                                        <span style="margin-left:10px;color:var(--gray);font-weight:600;">Incorrido → Conferido → Consolidado → Aprovado</span><div style="width:100%;margin-top:8px;color:var(--gray);font-size:.95rem;"><strong>Regras:</strong> Solicitante assina o Incorrido. Técnica Responsável: <strong>${TECNICA_RESPONSAVEL}</strong>. Aprovação final: <strong>${ENGENHEIRA_RESPONSAVEL}</strong>.</div>
+                                    </div>
+                                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                        <button class="btn btn-secondary" type="button" onclick="wfMove('incorrido')">Voltar p/ Incorrido</button>
+                                        <button class="btn btn-secondary" type="button" onclick="wfMove('conferido')">Enviar p/ Conferido</button>
+                                        <button class="btn btn-secondary" type="button" onclick="wfMove('consolidado')">Enviar p/ Consolidado</button>
+                                        <button class="btn btn-success" type="button" onclick="wfMove('aprovado')">Aprovar</button>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid" style="margin-top:12px;">
+                                    <div class="form-group">
+                                        <label>Assinatura de autorização</label>
+                                        <input type="text" class="form-control" id="wfSigner" placeholder="Nome do assinante">
+                                        <small id="wfSignerHelp" style="display:block;margin-top:6px;color:var(--gray);"></small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Desenhe a assinatura</label>
+                                        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;">
+                                            <canvas id="wfCanvas" width="600" height="160" style="width:100%;height:160px;touch-action:none;cursor:crosshair;"></canvas>
+                                        </div>
+                                        <div style="display:flex;gap:8px;margin-top:8px;">
+                                            <button class="btn btn-secondary" type="button" onclick="sigClear()">Limpar</button>
+                                            <button class="btn btn-primary" type="button" onclick="sigSave()">Salvar assinatura</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="wfHistory" style="margin-top:12px;"></div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+            
+            // Inicializar assinatura se houver RDO
+            if (rdo) {
+                setTimeout(() => {
+                    wfEnsure(rdo);
+                    sigInit(rdo);
+                    renderPhotosPreview(rdo);
+                    atualizarStatusWF();
+                }, 100);
+            } else {
+                // Novo RDO - criar objeto temporário
+                const tempRdo = { id: null, status: 'incorrido', signatures: {}, photos: [] };
+                setTimeout(() => {
+                    sigInit(tempRdo);
+                    atualizarStatusWF();
+                }, 100);
+            }
+            
+            // Configurar upload de fotos
+            const inp = document.getElementById('rdoFotos');
+            if (inp) {
+                inp.addEventListener('change', async (ev) => {
+                    const files = [...ev.target.files];
+                    if (!files.length) return;
+                    
+                    const id = document.getElementById('rdoId').value;
+                    
+                    // Se não tiver ID, cria um temporário
+                    let rr;
+                    if (!id) {
+                        // Criar RDO temporário
+                        rr = {
+                            id: 'temp_' + Date.now(),
+                            numero: document.getElementById('rdoNumero').value || 'Temp',
+                            data: document.getElementById('rdoData').value,
+                            obraId: parseInt(document.getElementById('rdoObra').value) || null,
+                            responsavel: document.getElementById('rdoResponsavel').value || '',
+                            status: lockedStatus,
+                            photos: [],
+                            signatures: {}
+                        };
+                        DB.rdos.push(rr);
+                        document.getElementById('rdoId').value = rr.id;
+                        WF_CURRENT_RDO_ID = rr.id;
+                    } else {
+                        const idx = DB.rdos.findIndex(r => String(r.id) === String(id));
+                        rr = idx >= 0 ? DB.rdos[idx] : null;
+                    }
+                    
+                    if (!rr) {
+                        showToast('Erro ao salvar fotos', 'error');
+                        return;
+                    }
+                    
+                    wfEnsure(rr);
+                    
+                    for (const f of files) {
+                        const key = 'photo:' + Date.now() + ':' + Math.random().toString(36).substring(2);
+                        await idbSetFile(key, f, { name: f.name, type: f.type, size: f.size });
+                        rr.photos.push({ key, name: f.name, type: f.type, size: f.size, at: new Date().toISOString() });
+                    }
+                    
+                    persist();
+                    showToast('Anexo(s) salvo(s).');
+                    await renderPhotosPreview(rr);
+                    inp.value = '';
+                });
+            }
+        }
+
+        function atualizarStatusWF() {
+            const status = document.getElementById('rdoStatus').value;
+            refreshWorkflowSignerFields(status);
+            const badge = document.getElementById('wfBadge');
+            if (badge) {
+                badge.className = 'badge badge-' + statusBadgeClass(status);
+                badge.textContent = statusLabel(status);
+            }
+        }
+
+        function saveRdo() {
+            try {
+                const rdoId = document.getElementById('rdoId').value;
+                const existingIndex = DB.rdos.findIndex(r => String(r.id) === String(rdoId));
+                const lockedStatus = existingIndex >= 0 ? (DB.rdos[existingIndex].status || 'incorrido') : 'incorrido';
+                const novoRdo = {
+                    id: rdoId || Date.now(),
+                    numero: document.getElementById('rdoNumero').value,
+                    data: document.getElementById('rdoData').value,
+                    obraId: parseInt(document.getElementById('rdoObra').value),
+                    responsavel: document.getElementById('rdoResponsavel').value,
+                    horaInicio: document.getElementById('rdoHoraInicio').value,
+                    horaFim: document.getElementById('rdoHoraFim').value,
+                    status: lockedStatus,
+                    descricao: document.getElementById('rdoDescricao').value,
+                    observacoes: document.getElementById('rdoObservacoes').value,
+                    atividade1: document.getElementById('rdoAtividade1')?.value || '',
+                    qtd1: document.getElementById('rdoQtd1')?.value || '',
+                    atividade2: document.getElementById('rdoAtividade2')?.value || '',
+                    qtd2: document.getElementById('rdoQtd2')?.value || '',
+                    atividade3: document.getElementById('rdoAtividade3')?.value || '',
+                    qtd3: document.getElementById('rdoQtd3')?.value || '',
+                    updatedAt: new Date().toISOString()
+                };
+                
+                // Preservar fotos e assinaturas se já existirem
+                const index = DB.rdos.findIndex(r => String(r.id) === String(novoRdo.id));
+                if (index >= 0) {
+                    novoRdo.photos = DB.rdos[index].photos || [];
+                    novoRdo.signatures = DB.rdos[index].signatures || {};
+                    DB.rdos[index] = novoRdo;
+                } else {
+                    novoRdo.photos = [];
+                    novoRdo.signatures = {};
+                    DB.rdos.push(novoRdo);
+                }
+                
+                persist();
+                showToast('RDO salvo com sucesso!');
+                loadView('rdo-list');
+            } catch (e) {
+                console.error(e);
+                showToast('Erro ao salvar RDO', 'error');
+            }
+        }
+
+        function editRdo(id) {
+            const container = document.getElementById('mainContent');
+            renderRdoForm(container, id);
+        }
+
+        function deleteRdo(id) {
+            if (confirm('Tem certeza que deseja excluir este RDO?')) {
+                DB.rdos = DB.rdos.filter(r => r.id != id);
+                persist();
+                showToast('RDO excluído com sucesso!');
+                loadView('rdo-list');
+            }
+        }
+
+        function filterRdos() {
+            const search = document.getElementById('searchRdo')?.value.toLowerCase() || '';
+            const status = document.getElementById('filterStatusRdo')?.value || '';
+            const dataInicio = document.getElementById('filterDataInicio')?.value || '';
+            const dataFim = document.getElementById('filterDataFim')?.value || '';
+            
+            const filtered = DB.rdos.filter(r => {
+                const matchSearch = !search || 
+                    (r.numero && r.numero.toLowerCase().includes(search)) ||
+                    (r.responsavel && r.responsavel.toLowerCase().includes(search));
+                    
+                const matchStatus = !status || r.status === status;
+                
+                let matchData = true;
+                if (dataInicio && r.data) {
+                    matchData = matchData && r.data >= dataInicio;
+                }
+                if (dataFim && r.data) {
+                    matchData = matchData && r.data <= dataFim;
+                }
+                
+                return matchSearch && matchStatus && matchData;
+            });
+            
+            const tbody = document.getElementById('rdoTableBody');
+            if (tbody) {
+                tbody.innerHTML = filtered.slice().reverse().map(r => {
+                    const obra = DB.obras.find(o => o.id === r.obraId);
+                    const qtdFotos = (r.photos || []).length;
+                    return `
+                        <tr>
+                            <td>${r.numero || '---'}</td>
+                            <td>${formatDate(r.data)}</td>
+                            <td>${obra ? obra.sigla : '---'}</td>
+                            <td>${r.responsavel || '---'}</td>
+                            <td><span class="badge badge-${statusBadgeClass(r.status)}">${statusLabel(r.status)}</span></td>
+                            <td>${qtdFotos > 0 ? `<i class="fas fa-image" style="color: var(--primary);"></i> ${qtdFotos}` : '---'}</td>
+                            <td>
+                                <i class="fas fa-edit action-icon" style="margin-right: 10px; cursor: pointer;" onclick="editRdo(${r.id})"></i>
+                                <i class="fas fa-trash action-icon" style="margin-right: 10px; cursor: pointer; color: var(--danger);" onclick="deleteRdo(${r.id})"></i>
+                                <i class="fas fa-file-pdf action-icon" style="cursor: pointer; color: var(--primary);" onclick="gerarPDFUnico(${r.id})"></i>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // ==================== OBRAS ====================
+        function renderObras(container) {
+            let html = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>Obras</h2>
+                    <button class="btn btn-primary" onclick="openCadastroModal('obra')">
+                        <i class="fas fa-plus"></i> Nova Obra
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sigla</th>
+                                <th>Nome</th>
+                                <th>Gestor</th>
+                                <th>Cliente</th>
+                                <th>Início</th>
+                                <th>Término</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${DB.obras.map(o => `
+                                <tr>
+                                    <td>${o.sigla}</td>
+                                    <td>${o.nome}</td>
+                                    <td>${o.gestor || '---'}</td>
+                                    <td>${o.cliente || '---'}</td>
+                                    <td>${formatDate(o.inicio)}</td>
+                                    <td>${formatDate(o.termino)}</td>
+                                    <td>
+                                        <i class="fas fa-edit action-icon" style="margin-right: 10px; cursor: pointer;" onclick="editObra(${o.id})"></i>
+                                        <i class="fas fa-trash action-icon" style="cursor: pointer; color: var(--danger);" onclick="deleteObra(${o.id})"></i>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // ==================== TAREFAS ====================
+        function renderTarefas(container) {
+            let html = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>Tarefas / EAP</h2>
+                    <button class="btn btn-primary" onclick="openCadastroModal('tarefa')">
+                        <i class="fas fa-plus"></i> Nova Tarefa
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descrição</th>
+                                <th>Unidade</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${DB.tarefas.map(t => `
+                                <tr>
+                                    <td>${t.codigo}</td>
+                                    <td>${t.descricao}</td>
+                                    <td>${t.unidade || '---'}</td>
+                                    <td><span class="badge badge-${t.ativo ? 'success' : 'danger'}">${t.ativo ? 'Ativo' : 'Inativo'}</span></td>
+                                    <td>
+                                        <i class="fas fa-edit action-icon" style="margin-right: 10px; cursor: pointer;" onclick="editTarefa(${t.id})"></i>
+                                        <i class="fas fa-trash action-icon" style="cursor: pointer; color: var(--danger);" onclick="deleteTarefa(${t.id})"></i>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // ==================== CARGOS ====================
+        function renderCargos(container) {
+            let html = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>Cargos</h2>
+                    <button class="btn btn-primary" onclick="openCadastroModal('cargo')">
+                        <i class="fas fa-plus"></i> Novo Cargo
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cargo</th>
+                                <th>Tipo</th>
+                                <th>CBO</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${DB.cargos.map(c => `
+                                <tr>
+                                    <td>${c.nome}</td>
+                                    <td>${c.tipo || 'MOD'}</td>
+                                    <td>${c.cbo || '---'}</td>
+                                    <td>
+                                        <i class="fas fa-edit action-icon" style="margin-right: 10px; cursor: pointer;" onclick="editCargo(${c.id})"></i>
+                                        <i class="fas fa-trash action-icon" style="cursor: pointer; color: var(--danger);" onclick="deleteCargo(${c.id})"></i>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // ==================== EFETIVO ====================
+        function renderEfetivo(container) {
+            let html = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>Efetivo</h2>
+                    <button class="btn btn-primary" onclick="openCadastroModal('efetivo')">
+                        <i class="fas fa-plus"></i> Novo Funcionário
+                    </button>
+                </div>
+                
+                <div class="search-box">
+                    <input type="text" id="searchEfetivo" placeholder="Buscar funcionário..." onkeyup="filterEfetivo()">
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Empresa</th>
+                                <th>Cargo</th>
+                                <th>Matrícula</th>
+                                <th>Admissão</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="efetivoTableBody">
+                            ${DB.efetivo.map(e => `
+                                <tr>
+                                    <td>${e.nome}</td>
+                                    <td>${e.empresa || '---'}</td>
+                                    <td>${e.cargo || '---'}</td>
+                                    <td>${e.matricula || '---'}</td>
+                                    <td>${formatDate(e.admissao)}</td>
+                                    <td>
+                                        <i class="fas fa-edit action-icon" style="margin-right: 10px; cursor: pointer;" onclick="editEfetivo(${e.id})"></i>
+                                        <i class="fas fa-trash action-icon" style="cursor: pointer; color: var(--danger);" onclick="deleteEfetivo(${e.id})"></i>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // ==================== EQUIPAMENTOS ====================
+        function renderEquipamentos(container) {
+            let html = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>Equipamentos</h2>
+                    <button class="btn btn-primary" onclick="openCadastroModal('equipamento')">
+                        <i class="fas fa-plus"></i> Novo Equipamento
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Empresa</th>
+                                <th>TAG</th>
+                                <th>Área</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${DB.equipamentos.map(e => `
+                                <tr>
+                                    <td>${e.descricao}</td>
+                                    <td>${e.empresa || '---'}</td>
+                                    <td>${e.tag || '---'}</td>
+                                    <td>${e.area || '---'}</td>
+                                    <td>
+                                        <i class="fas fa-edit action-icon" style="margin-right: 10px; cursor: pointer;" onclick="editEquipamento(${e.id})"></i>
+                                        <i class="fas fa-trash action-icon" style="cursor: pointer; color: var(--danger);" onclick="deleteEquipamento(${e.id})"></i>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // ==================== BACKUP ====================
+        function renderBackup(container) {
+            const rdosOrdenados = [...DB.rdos].sort((a, b) => ((b.data || '') + (b.numero || '')).localeCompare((a.data || '') + (a.numero || '')));
+            container.innerHTML = `
+                <h2 style="margin-bottom: 1.5rem;">Backup e Restauração</h2>
+                
+                <div class="grid-4">
+                    <div class="stat-card">
+                        <h3>Total de RDOs</h3>
+                        <div class="number">${DB.rdos.length}</div>
+                        <small style="color: var(--gray); font-weight: 600;">Somente os RDOs da lista</small>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Último Backup</h3>
+                        <div class="number">${LS_SAFE.get('lastBackup') ? new Date(LS_SAFE.get('lastBackup')).toLocaleDateString() : '---'}</div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items:start;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Exportar Dados</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="border:1px solid var(--border); border-radius:12px; padding:12px; max-height:300px; overflow:auto; margin-bottom: 1rem; background:#fff;">
+                                <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                                    <strong>Escolha quais RDOs irão no backup</strong>
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                        <button class="btn btn-secondary" type="button" onclick="toggleAllBackupRdos(true)">Marcar todas</button>
+                                        <button class="btn btn-secondary" type="button" onclick="toggleAllBackupRdos(false)">Limpar</button>
+                                    </div>
+                                </div>
+                                <div id="backupSelectionInfo" style="margin-bottom:10px; color:var(--gray); font-weight:600;"></div>
+                                ${rdosOrdenados.length ? rdosOrdenados.map(r => `
+                                    <label style="display:flex; align-items:flex-start; gap:10px; padding:10px 8px; border-bottom:1px solid var(--border); cursor:pointer;">
+                                        <input type="checkbox" class="backup-rdo-checkbox" value="${r.id}" checked onchange="updateBackupSelectionInfo()" style="margin-top:4px;">
+                                        <span>
+                                            <strong>RDO ${r.numero || '---'}</strong><br>
+                                            <small style="color:var(--gray);">${formatDate(r.data)} • ${r.responsavel || 'Sem responsável'} • ${statusLabel(r.status)}</small>
+                                        </span>
+                                    </label>
+                                `).join('') : '<div style="color:var(--gray);">Nenhum RDO cadastrado para exportação.</div>'}
+                            </div>
+                            <button class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;" onclick="exportBackup()">
+                                <i class="fas fa-download"></i> Backup Selecionado (JSON)
+                            </button>
+                            <button class="btn btn-secondary" style="width: 100%;" onclick="exportExcel()">
+                                <i class="fas fa-file-excel"></i> Exportar RDOs Selecionados para Excel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Importar Dados</h3>
+                        </div>
+                        <div class="card-body">
+                            <input type="file" id="importFile" accept=".json,.xlsx" style="margin-bottom: 1rem;">
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-success" style="flex: 1;" onclick="importData()">
+                                    <i class="fas fa-upload"></i> Importar
+                                </button>
+                                <button class="btn btn-primary" style="flex: 1;" onclick="importJSON()">
+                                    <i class="fas fa-file-import"></i> Importar JSON
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            updateBackupSelectionInfo();
+        }
+
+        // ==================== CONFIGURAÇÕES ====================
+        function renderConfig(container) {
+            container.innerHTML = `
+                <h2 style="margin-bottom: 1.5rem;">Configurações</h2>
+                
+                <div class="card" style="max-width: 600px;">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Nome do Usuário</label>
+                            <input type="text" class="form-control" id="configUserName" value="NAZA Auditoria">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Obra Padrão</label>
+                            <select class="form-control" id="configObra">
+                                <option value="">Selecione...</option>
+                                ${DB.obras.map(o => `<option value="${o.id}">${o.sigla} - ${o.nome}</option>`).join('')}
+                            </select>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="saveConfig()">
+                            <i class="fas fa-save"></i> Salvar Configurações
+                        </button>
+
+                        <hr style="margin:16px 0;border:none;border-top:1px solid var(--border);">
+                        <h3 style="margin-bottom:8px;">Supabase (opcional)</h3>
+                        <div class="form-group">
+                            <label>Supabase URL</label>
+                            <input type="text" class="form-control" id="sbUrl" placeholder="https://xxxx.supabase.co" value="${(DB.supabase&&DB.supabase.url)||''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Anon Key</label>
+                            <input type="password" class="form-control" id="sbKey" placeholder="cole aqui sua anon key" value="${(DB.supabase&&DB.supabase.key)||''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Ativo</label>
+                            <select class="form-control" id="sbEnabled">
+                                <option value="0" ${(DB.supabase&&DB.supabase.enabled)?'':'selected'}>Não</option>
+                                <option value="1" ${(DB.supabase&&DB.supabase.enabled)?'selected':''}>Sim</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" type="button" onclick="saveSupabaseConfig()">
+                            <i class="fas fa-link"></i> Salvar Supabase
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== MODAL DE CADASTRO ====================
+        let currentModalType = '';
+        let currentEditId = null;
+
+        function openCadastroModal(type, editId = null) {
+            currentModalType = type;
+            currentEditId = editId;
+            
+            const modal = document.getElementById('modalCadastro');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            
+            let item = null;
+            if (editId) {
+                if (type === 'obra') item = DB.obras.find(i => i.id == editId);
+                if (type === 'tarefa') item = DB.tarefas.find(i => i.id == editId);
+                if (type === 'cargo') item = DB.cargos.find(i => i.id == editId);
+                if (type === 'efetivo') item = DB.efetivo.find(i => i.id == editId);
+                if (type === 'equipamento') item = DB.equipamentos.find(i => i.id == editId);
+            }
+            
+            let html = '';
+            
+            switch(type) {
+                case 'obra':
+                    modalTitle.innerText = editId ? 'Editar Obra' : 'Nova Obra';
+                    html = `
+                        <div class="form-group">
+                            <label>Sigla</label>
+                            <input type="text" class="form-control" id="modalSigla" value="${item ? item.sigla || '' : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nome da Obra</label>
+                            <input type="text" class="form-control" id="modalNome" value="${item ? item.nome || '' : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Gestor</label>
+                            <input type="text" class="form-control" id="modalGestor" value="${item ? item.gestor || '' : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Cliente</label>
+                            <input type="text" class="form-control" id="modalCliente" value="${item ? item.cliente || 'SAMARCO' : 'SAMARCO'}">
+                        </div>
+                        <div class="form-group">
+                            <label>Data Início</label>
+                            <input type="date" class="form-control" id="modalInicio" value="${item ? item.inicio || '' : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Data Término</label>
+                            <input type="date" class="form-control" id="modalTermino" value="${item ? item.termino || '' : ''}">
+                        </div>
+                    `;
+                    break;
+                    
+                case 'tarefa':
+                    modalTitle.innerText = editId ? 'Editar Tarefa' : 'Nova Tarefa';
+                    html = `
+                        <div class="form-group">
+                            <label>Código</label>
+                            <input type="text" class="form-control" id="modalCodigo" value="${item ? item.codigo || '' : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Descrição</label>
+                            <input type="text" class="form-control" id="modalDescricao" value="${item ? item.descricao || '' : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Unidade</label>
+                            <input type="text" class="form-control" id="modalUnidade" value="${item ? item.unidade || 'UN' : 'UN'}">
+                        </div>
+                        <div class="form-group">
+                            <label>Ativo</label>
+                            <select class="form-control" id="modalAtivo">
+                                <option value="true" ${item && item.ativo === true ? 'selected' : ''}>Sim</option>
+                                <option value="false" ${item && item.ativo === false ? 'selected' : ''}>Não</option>
+                            </select>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'cargo':
+                    modalTitle.innerText = editId ? 'Editar Cargo' : 'Novo Cargo';
+                    html = `
+                        <div class="form-group">
+                            <label>Nome do Cargo</label>
+                            <input type="text" class="form-control" id="modalNome" value="${item ? item.nome || '' : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select class="form-control" id="modalTipo">
+                                <option value="MOD" ${item && item.tipo === 'MOD' ? 'selected' : ''}>MOD - Mão de Obra Direta</option>
+                                <option value="MOI" ${item && item.tipo === 'MOI' ? 'selected' : ''}>MOI - Mão de Obra Indireta</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>CBO</label>
+                            <input type="text" class="form-control" id="modalCbo" value="${item ? item.cbo || '' : ''}">
+                        </div>
+                    `;
+                    break;
+                    
+                case 'efetivo':
+                    modalTitle.innerText = editId ? 'Editar Funcionário' : 'Novo Funcionário';
+                    html = `
+                        <div class="form-group">
+                            <label>Nome</label>
+                            <input type="text" class="form-control" id="modalNome" value="${item ? item.nome || '' : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Empresa</label>
+                            <input type="text" class="form-control" id="modalEmpresa" value="${item ? item.empresa || 'VORDEX' : 'VORDEX'}">
+                        </div>
+                        <div class="form-group">
+                            <label>Cargo</label>
+                            <input type="text" class="form-control" id="modalCargo" value="${item ? item.cargo || '' : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Matrícula</label>
+                            <input type="text" class="form-control" id="modalMatricula" value="${item ? item.matricula || '' : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Data Admissão</label>
+                            <input type="date" class="form-control" id="modalAdmissao" value="${item ? item.admissao || '' : ''}">
+                        </div>
+                    `;
+                    break;
+                    
+                case 'equipamento':
+                    modalTitle.innerText = editId ? 'Editar Equipamento' : 'Novo Equipamento';
+                    html = `
+                        <div class="form-group">
+                            <label>Descrição</label>
+                            <input type="text" class="form-control" id="modalDescricao" value="${item ? item.descricao || '' : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Empresa</label>
+                            <input type="text" class="form-control" id="modalEmpresa" value="${item ? item.empresa || 'VORDEX' : 'VORDEX'}">
+                        </div>
+                        <div class="form-group">
+                            <label>TAG</label>
+                            <input type="text" class="form-control" id="modalTag" value="${item ? item.tag || '' : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Área</label>
+                            <input type="text" class="form-control" id="modalArea" value="${item ? item.area || '' : ''}">
+                        </div>
+                    `;
+                    break;
+            }
+            
+            modalBody.innerHTML = html;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modalCadastro').classList.remove('active');
+            currentModalType = '';
+            currentEditId = null;
+        }
+
+        function closePDFModal() {
+            document.getElementById('modalPDF').classList.remove('active');
+        }
+
+        function saveCadastro() {
+            let newItem = {};
+            
+            switch(currentModalType) {
+                case 'obra':
+                    newItem = {
+                        id: currentEditId || Date.now(),
+                        sigla: document.getElementById('modalSigla').value,
+                        nome: document.getElementById('modalNome').value,
+                        gestor: document.getElementById('modalGestor').value,
+                        cliente: document.getElementById('modalCliente').value,
+                        inicio: document.getElementById('modalInicio').value,
+                        termino: document.getElementById('modalTermino').value
+                    };
+                    
+                    if (currentEditId) {
+                        const index = DB.obras.findIndex(o => o.id == currentEditId);
+                        if (index >= 0) DB.obras[index] = newItem;
+                    } else {
+                        DB.obras.push(newItem);
+                    }
+                    break;
+                    
+                case 'tarefa':
+                    newItem = {
+                        id: currentEditId || Date.now(),
+                        codigo: document.getElementById('modalCodigo').value,
+                        descricao: document.getElementById('modalDescricao').value,
+                        unidade: document.getElementById('modalUnidade').value,
+                        ativo: document.getElementById('modalAtivo').value === 'true'
+                    };
+                    
+                    if (currentEditId) {
+                        const index = DB.tarefas.findIndex(t => t.id == currentEditId);
+                        if (index >= 0) DB.tarefas[index] = newItem;
+                    } else {
+                        DB.tarefas.push(newItem);
+                    }
+                    break;
+                    
+                case 'cargo':
+                    newItem = {
+                        id: currentEditId || Date.now(),
+                        nome: document.getElementById('modalNome').value,
+                        tipo: document.getElementById('modalTipo').value,
+                        cbo: document.getElementById('modalCbo').value
+                    };
+                    
+                    if (currentEditId) {
+                        const index = DB.cargos.findIndex(c => c.id == currentEditId);
+                        if (index >= 0) DB.cargos[index] = newItem;
+                    } else {
+                        DB.cargos.push(newItem);
+                    }
+                    break;
+                    
+                case 'efetivo':
+                    newItem = {
+                        id: currentEditId || Date.now(),
+                        nome: document.getElementById('modalNome').value,
+                        empresa: document.getElementById('modalEmpresa').value,
+                        cargo: document.getElementById('modalCargo').value,
+                        matricula: document.getElementById('modalMatricula').value,
+                        admissao: document.getElementById('modalAdmissao').value
+                    };
+                    
+                    if (currentEditId) {
+                        const index = DB.efetivo.findIndex(e => e.id == currentEditId);
+                        if (index >= 0) DB.efetivo[index] = newItem;
+                    } else {
+                        DB.efetivo.push(newItem);
+                    }
+                    break;
+                    
+                case 'equipamento':
+                    newItem = {
+                        id: currentEditId || Date.now(),
+                        descricao: document.getElementById('modalDescricao').value,
+                        empresa: document.getElementById('modalEmpresa').value,
+                        tag: document.getElementById('modalTag').value,
+                        area: document.getElementById('modalArea').value
+                    };
+                    
+                    if (currentEditId) {
+                        const index = DB.equipamentos.findIndex(e => e.id == currentEditId);
+                        if (index >= 0) DB.equipamentos[index] = newItem;
+                    } else {
+                        DB.equipamentos.push(newItem);
+                    }
+                    break;
+            }
+            
+            persist();
+            closeModal();
+            showToast('Cadastro salvo com sucesso!');
+            
+            // Recarregar a view atual
+            const activeView = document.querySelector('.menu-item.active')?.dataset.view;
+            if (activeView) loadView(activeView);
+        }
+
+        // Funções de edição e exclusão
+        function editObra(id) { openCadastroModal('obra', id); }
+        function deleteObra(id) {
+            if (confirm('Tem certeza que deseja excluir esta obra?')) {
+                DB.obras = DB.obras.filter(o => o.id != id);
+                persist();
+                showToast('Obra excluída com sucesso!');
+                loadView('obras');
+            }
+        }
+
+        function editTarefa(id) { openCadastroModal('tarefa', id); }
+        function deleteTarefa(id) {
+            if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+                DB.tarefas = DB.tarefas.filter(t => t.id != id);
+                persist();
+                showToast('Tarefa excluída com sucesso!');
+                loadView('tarefas');
+            }
+        }
+
+        function editCargo(id) { openCadastroModal('cargo', id); }
+        function deleteCargo(id) {
+            if (confirm('Tem certeza que deseja excluir este cargo?')) {
+                DB.cargos = DB.cargos.filter(c => c.id != id);
+                persist();
+                showToast('Cargo excluído com sucesso!');
+                loadView('cargos');
+            }
+        }
+
+        function editEfetivo(id) { openCadastroModal('efetivo', id); }
+        function deleteEfetivo(id) {
+            if (confirm('Tem certeza que deseja excluir este funcionário?')) {
+                DB.efetivo = DB.efetivo.filter(e => e.id != id);
+                persist();
+                showToast('Funcionário excluído com sucesso!');
+                loadView('efetivo');
+            }
+        }
+
+        function editEquipamento(id) { openCadastroModal('equipamento', id); }
+        function deleteEquipamento(id) {
+            if (confirm('Tem certeza que deseja excluir este equipamento?')) {
+                DB.equipamentos = DB.equipamentos.filter(e => e.id != id);
+                persist();
+                showToast('Equipamento excluído com sucesso!');
+                loadView('equipamentos');
+            }
+        }
+
+        function filterEfetivo() {
+            const search = document.getElementById('searchEfetivo')?.value.toLowerCase() || '';
+            const filtered = DB.efetivo.filter(e => 
+                e.nome.toLowerCase().includes(search) || 
+                (e.matricula && e.matricula.toLowerCase().includes(search))
+            );
+            
+            const tbody = document.getElementById('efetivoTableBody');
+            if (tbody) {
+                tbody.innerHTML = filtered.map(e => `
+                    <tr>
+                        <td>${e.nome}</td>
+                        <td>${e.empresa || '---'}</td>
+                        <td>${e.cargo || '---'}</td>
+                        <td>${e.matricula || '---'}</td>
+                        <td>${formatDate(e.admissao)}</td>
+                        <td>
+                            <i class="fas fa-edit action-icon" style="margin-right: 10px; cursor: pointer;" onclick="editEfetivo(${e.id})"></i>
+                            <i class="fas fa-trash action-icon" style="cursor: pointer; color: var(--danger);" onclick="deleteEfetivo(${e.id})"></i>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // ==================== ARQUIVOS (FOTOS/ANEXOS) no IndexedDB ====================
+        const IDB_STORE_FILES = "files";
+        async function idbGetFile(key){
+            const db = await idbOpen();
+            return new Promise((resolve,reject)=>{
+                const tx=db.transaction(IDB_STORE_FILES,"readonly");
+                const req=tx.objectStore(IDB_STORE_FILES).get(key);
+                req.onsuccess=()=>resolve(req.result||null);
+                req.onerror=()=>reject(req.error);
+            });
+        }
+        async function idbSetFile(key, blob, meta={}){
+            const db=await idbOpen();
+            return new Promise((resolve,reject)=>{
+                const tx=db.transaction(IDB_STORE_FILES,"readwrite");
+                tx.objectStore(IDB_STORE_FILES).put({k:key, blob, meta, savedAt:new Date().toISOString()});
+                tx.oncomplete=()=>resolve(true);
+                tx.onerror=()=>reject(tx.error);
+            });
+        }
+        async function idbDelFile(key){
+            const db=await idbOpen();
+            return new Promise((resolve,reject)=>{
+                const tx=db.transaction(IDB_STORE_FILES,"readwrite");
+                tx.objectStore(IDB_STORE_FILES).delete(key);
+                tx.oncomplete=()=>resolve(true);
+                tx.onerror=()=>reject(tx.error);
+            });
+        }
+
+        async function renderPhotosPreview(rdo){
+            const box = document.getElementById('rdoFotosPreview');
+            if(!box) return;
+            
+            box.innerHTML = '';
+            
+            if (!rdo || !rdo.photos || rdo.photos.length === 0) {
+                box.innerHTML = '<div style="color: var(--gray); text-align: center; width: 100%;">Nenhuma foto anexada</div>';
+                return;
+            }
+            
+            const arr = (rdo.photos || []).slice().reverse();
+            
+            for(const p of arr){
+                try {
+                    const rec = await idbGetFile(p.key);
+                    if(!rec || !rec.blob) continue;
+                    
+                    const url = URL.createObjectURL(rec.blob);
+                    const isImg = (p.type || '').startsWith('image/');
+                    
+                    const el = document.createElement('div');
+                    el.className = 'foto-item';
+                    
+                    if (isImg) {
+                        el.innerHTML = `<img src="${url}" alt="${p.name}">`;
+                    } else {
+                        el.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--light);color:var(--gray);">📄</div>`;
+                    }
+                    
+                    const btn = document.createElement('button');
+                    btn.className = 'foto-delete';
+                    btn.innerHTML = '×';
+                    btn.onclick = async (e) => {
+                        e.stopPropagation();
+                        if(!confirm('Remover este anexo?')) return;
+                        
+                        await idbDelFile(p.key).catch(()=>{});
+                        rdo.photos = (rdo.photos || []).filter(x => x.key !== p.key);
+                        
+                        // Atualiza no DB
+                        const idx = DB.rdos.findIndex(r => String(r.id) === String(rdo.id));
+                        if (idx >= 0) { 
+                            DB.rdos[idx].photos = rdo.photos; 
+                        }
+                        
+                        persist();
+                        renderPhotosPreview(rdo);
+                    };
+                    
+                    el.appendChild(btn);
+                    el.onclick = () => { window.open(url, '_blank'); };
+                    box.appendChild(el);
+                    
+                } catch (e) {
+                    console.error('Erro ao carregar foto:', e);
+                }
+            }
+        }
+
+        // ==================== WORKFLOW + ASSINATURA ====================
+        let WF_CURRENT_RDO_ID = null;
+        let currentRdoForSig = null;
+
+        function wfEnsure(rdo){
+            rdo.status = rdo.status || 'incorrido';
+            rdo.signatures = rdo.signatures || {};
+            rdo.photos = rdo.photos || [];
+            return rdo;
+        }
+
+        function wfMove(target){
+            try{
+                const id = WF_CURRENT_RDO_ID;
+                if(!id) {
+                    showToast('Salve o RDO primeiro', 'error');
+                    return;
+                }
+                
+                const idx = DB.rdos.findIndex(r => String(r.id) === String(id));
+                if(idx < 0) {
+                    showToast('RDO não encontrado', 'error');
+                    return;
+                }
+                
+                const r = wfEnsure(DB.rdos[idx]);
+                const cur = r.status || 'incorrido';
+                const curI = STATUS_ORDER.indexOf(cur);
+                const tarI = STATUS_ORDER.indexOf(target);
+                const currentSigStage = cur === 'consolidado' && target === 'aprovado' ? 'aprovado' : cur;
+                
+                if(tarI < 0) return;
+                
+                // Voltar etapa
+                if(tarI < curI){
+                    if(!confirm('Voltar etapa irá liberar edição. Confirmar?')) return;
+                    r.status = target;
+                    persist();
+                    showToast('Etapa alterada.');
+                    renderRdoForm(document.getElementById('mainContent'), r.id);
+                    return;
+                }
+                
+                // Avançar
+                if(tarI > curI+1){
+                    showToast('Avance etapa a etapa (sem pular).', 'error');
+                    return;
+                }
+                
+                // Verificar assinatura
+                const sig = r.signatures[currentSigStage];
+                if(!sig || !sig.dataUrl){
+                    const msg = target === 'aprovado'
+                        ? 'Salve a assinatura da engenheira responsável antes de aprovar.'
+                        : 'Salve a assinatura da etapa atual antes de avançar.';
+                    showToast(msg, 'error');
+                    return;
+                }
+                if(target === 'aprovado' && sig.name !== ENGENHEIRA_RESPONSAVEL){
+                    showToast('Somente a engenheira responsável pode aprovar este RDO.', 'error');
+                    return;
+                }
+                
+                r.status = target;
+                persist();
+                showToast('Etapa avançada.');
+                renderRdoForm(document.getElementById('mainContent'), r.id);
+                
+            }catch(e){
+                console.error(e);
+                showToast('Falha ao mover etapa.', 'error');
+            }
+        }
+
+        function sigInit(rdo){
+            currentRdoForSig = rdo;
+            const c = document.getElementById('wfCanvas');
+            if(!c) return;
+            
+            const ctx = c.getContext('2d');
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            let drawing = false;
+            let lastX = 0;
+            let lastY = 0;
+
+            function startDrawing(e) {
+                e.preventDefault();
+                drawing = true;
+                const pos = getCoordinates(e);
+                lastX = pos.x;
+                lastY = pos.y;
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+            }
+
+            function draw(e) {
+                e.preventDefault();
+                if (!drawing) return;
+                
+                const pos = getCoordinates(e);
+                
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                
+                lastX = pos.x;
+                lastY = pos.y;
+            }
+
+            function stopDrawing() {
+                drawing = false;
+                ctx.beginPath(); // Reset path
+            }
+
+            function getCoordinates(e) {
+                const rect = c.getBoundingClientRect();
+                const scaleX = c.width / rect.width;
+                const scaleY = c.height / rect.height;
+                
+                let clientX, clientY;
+                
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                
+                const x = (clientX - rect.left) * scaleX;
+                const y = (clientY - rect.top) * scaleY;
+                
+                return { 
+                    x: Math.min(Math.max(x, 0), c.width), 
+                    y: Math.min(Math.max(y, 0), c.height) 
+                };
+            }
+
+            // Remover listeners antigos
+            c.removeEventListener('mousedown', startDrawing);
+            c.removeEventListener('mousemove', draw);
+            c.removeEventListener('mouseup', stopDrawing);
+            c.removeEventListener('mouseleave', stopDrawing);
+            c.removeEventListener('touchstart', startDrawing);
+            c.removeEventListener('touchmove', draw);
+            c.removeEventListener('touchend', stopDrawing);
+            c.removeEventListener('touchcancel', stopDrawing);
+            
+            // Adicionar novos listeners
+            c.addEventListener('mousedown', startDrawing);
+            c.addEventListener('mousemove', draw);
+            c.addEventListener('mouseup', stopDrawing);
+            c.addEventListener('mouseleave', stopDrawing);
+            c.addEventListener('touchstart', startDrawing, { passive: false });
+            c.addEventListener('touchmove', draw, { passive: false });
+            c.addEventListener('touchend', stopDrawing);
+            c.addEventListener('touchcancel', stopDrawing);
+
+            // Carregar assinatura existente
+            const st = rdo.status || 'incorrido';
+            const displayStage = st === 'consolidado' ? 'aprovado' : st;
+            const saved = rdo.signatures && rdo.signatures[displayStage] && rdo.signatures[displayStage].dataUrl;
+            if(saved){
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0, 0, c.width, c.height);
+                    ctx.drawImage(img, 0, 0, c.width, c.height);
+                };
+                img.src = saved;
+            } else {
+                ctx.clearRect(0, 0, c.width, c.height);
+            }
+            
+            // Preencher nome
+            const inp = document.getElementById('wfSigner');
+            if(inp){
+                const curSig = rdo.signatures && rdo.signatures[displayStage];
+                inp.value = (curSig && curSig.name) ? curSig.name : (document.getElementById('userName')?.innerText || '');
+            }
+            
+            wfRenderHistory(rdo);
+            wfRenderBadge(rdo);
+        }
+
+        function sigClear(){
+            const c = document.getElementById('wfCanvas');
+            if(!c) return;
+            const ctx = c.getContext('2d');
+            ctx.clearRect(0, 0, c.width, c.height);
+        }
+
+        function sigSave(){
+            try {
+                const id = WF_CURRENT_RDO_ID;
+                if(!id) {
+                    showToast('Salve o RDO primeiro', 'error');
+                    return;
+                }
+                
+                const idx = DB.rdos.findIndex(r => String(r.id) === String(id));
+                if(idx < 0) {
+                    showToast('RDO não encontrado', 'error');
+                    return;
+                }
+                
+                const r = wfEnsure(DB.rdos[idx]);
+                const st = r.status || 'incorrido';
+                const signatureStage = st === 'consolidado' ? 'aprovado' : st;
+                const name = (document.getElementById('wfSigner')?.value || '').trim();
+                
+                if(!name){ 
+                    showToast('Informe o nome do assinante.', 'error'); 
+                    return; 
+                }
+                if(st === 'conferido' && name !== TECNICA_RESPONSAVEL){
+                    showToast('Somente a Técnica Responsável pode assinar esta etapa.', 'error');
+                    return;
+                }
+                if(st === 'consolidado' && name !== ENGENHEIRA_RESPONSAVEL){
+                    showToast('Somente a engenheira responsável pode assinar a aprovação.', 'error');
+                    return;
+                }
+                
+                const c = document.getElementById('wfCanvas');
+                if(!c) return;
+                
+                const dataUrl = c.toDataURL('image/png');
+                r.signatures[signatureStage] = { name, at: new Date().toISOString(), dataUrl };
+                
+                persist();
+                showToast('Assinatura salva.');
+                refreshWorkflowSignerFields(st);
+                wfRenderHistory(r);
+                
+            } catch(e) {
+                console.error(e);
+                showToast('Erro ao salvar assinatura', 'error');
+            }
+        }
+
+        function wfRenderBadge(rdo){
+            const b = document.getElementById('wfBadge');
+            if(!b) return;
+            b.className = 'badge badge-' + statusBadgeClass(rdo.status);
+            b.textContent = statusLabel(rdo.status);
+        }
+        
+        function wfRenderHistory(rdo){
+            const box = document.getElementById('wfHistory');
+            if(!box) return;
+            
+            const sigs = rdo.signatures || {};
+            const rows = STATUS_ORDER.map(st => {
+                const s = sigs[st];
+                if(!s) return `<div style="padding:6px 0;color:var(--gray);border-bottom:1px solid var(--border);">${statusLabel(st)}: <em>não assinado</em></div>`;
+                const d = new Date(s.at).toLocaleString('pt-BR');
+                return `<div style="padding:6px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border);">
+                    <div><strong>${statusLabel(st)}:</strong> ${s.name} <span style="color:var(--gray);font-size:0.9em;">(${d})</span></div>
+                    <img src="${s.dataUrl}" alt="sig" style="height:40px;border:1px solid var(--border);border-radius:4px;background:#fff;padding:2px;">
+                </div>`;
+            }).join('');
+            box.innerHTML = rows || '<div style="padding:6px 0;color:var(--gray);">Nenhuma assinatura</div>';
+        }
+
+        // ==================== FUNÇÕES DE PDF ====================
+        function abrirSeletorPDF() {
+            const modal = document.getElementById('modalPDF');
+            if (!modal) return;
+            
+            const lista = document.getElementById('pdfSelectorList');
+            if (!lista) return;
+            
+            // Limpar filtros
+            document.getElementById('pdfDataInicio').value = '';
+            document.getElementById('pdfDataFim').value = '';
+            
+            // Carregar RDOs
+            atualizarListaPDF();
+            
+            modal.classList.add('active');
+        }
+
+        function atualizarListaPDF(filtroInicio = '', filtroFim = '') {
+            const lista = document.getElementById('pdfSelectorList');
+            if (!lista) return;
+            
+            let rdosFiltrados = [...DB.rdos];
+            
+            if (filtroInicio) {
+                rdosFiltrados = rdosFiltrados.filter(r => r.data && r.data >= filtroInicio);
+            }
+            if (filtroFim) {
+                rdosFiltrados = rdosFiltrados.filter(r => r.data && r.data <= filtroFim);
+            }
+            
+            // Ordenar por data decrescente
+            rdosFiltrados.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+            
+            lista.innerHTML = rdosFiltrados.map(r => {
+                const obra = DB.obras.find(o => o.id === r.obraId);
+                const qtdFotos = (r.photos || []).length;
+                return `
+                    <div class="pdf-item">
+                        <input type="checkbox" class="pdf-checkbox" value="${r.id}" id="pdf_${r.id}">
+                        <label for="pdf_${r.id}" style="flex: 1; cursor: pointer;">
+                            <strong>${r.numero || 'Sem número'}</strong> - 
+                            ${formatDate(r.data)} - 
+                            ${obra ? obra.sigla : 'Sem obra'} - 
+                            <span class="badge badge-${statusBadgeClass(r.status)}">${statusLabel(r.status)}</span>
+                            ${qtdFotos > 0 ? ` <i class="fas fa-image" style="color: var(--primary);"></i> ${qtdFotos}` : ''}
+                        </label>
+                    </div>
+                `;
+            }).join('');
+            
+            if (rdosFiltrados.length === 0) {
+                lista.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--gray);">Nenhum RDO encontrado</div>';
+            }
+        }
+
+        function filtrarRDOsPDF() {
+            const inicio = document.getElementById('pdfDataInicio').value;
+            const fim = document.getElementById('pdfDataFim').value;
+            atualizarListaPDF(inicio, fim);
+        }
+
+        function gerarPDFSelecionados() {
+            const checkboxes = document.querySelectorAll('.pdf-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showToast('Selecione pelo menos um RDO', 'error');
+                return;
+            }
+            
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            const rdosSelecionados = DB.rdos.filter(r => ids.includes(String(r.id)));
+            
+            gerarPDFMultiplos(rdosSelecionados);
+            closePDFModal();
+        }
+
+        function gerarPDFUnico(id) {
+            const rdo = DB.rdos.find(r => r.id == id);
+            if (!rdo) {
+                showToast('RDO não encontrado', 'error');
+                return;
+            }
+            gerarPDFMultiplos([rdo]);
+        }
+
+        async function gerarPDFMultiplos(rdos) {
+            if (typeof jspdf === 'undefined') {
+                showToast('Biblioteca PDF não carregada', 'error');
+                return;
+            }
+            
+            showToast('Gerando PDF, aguarde...');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            let y = 15;
+            const pageHeight = doc.internal.pageSize.height;
+            const pageWidth = doc.internal.pageSize.width;
+            const margin = 15;
+            const contentWidth = pageWidth - (margin * 2);
+            
+            for (let i = 0; i < rdos.length; i++) {
+                const rdo = rdos[i];
+                const obra = DB.obras.find(o => o.id == rdo.obraId);
+                
+                if (i > 0) {
+                    doc.addPage();
+                    y = 15;
+                }
+                
+                // Cabeçalho
+                doc.setFontSize(18);
+                doc.setTextColor(0, 58, 107);
+                doc.text('RELATÓRIO DIÁRIO DE OBRAS - RDO', margin, y);
+                y += 10;
+                
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0);
+                doc.text(`Número: ${rdo.numero || '---'}`, margin, y);
+                y += 7;
+                doc.text(`Data: ${formatDate(rdo.data)}`, margin, y);
+                y += 7;
+                doc.text(`Obra: ${obra ? obra.nome : '---'} (${obra ? obra.sigla : '---'})`, margin, y);
+                y += 7;
+                doc.text(`Responsável: ${rdo.responsavel || '---'}`, margin, y);
+                y += 7;
+                doc.text(`Status: ${statusLabel(rdo.status)}`, margin, y);
+                y += 10;
+                
+                // Horários
+                doc.text(`Horário: ${rdo.horaInicio || '07:00'} às ${rdo.horaFim || '17:00'}`, margin, y);
+                y += 10;
+                
+                // Descrição
+                doc.setFontSize(11);
+                doc.setTextColor(0, 58, 107);
+                doc.text('Descrição das Atividades:', margin, y);
+                y += 6;
+                
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                const descricao = rdo.descricao || 'Nenhuma descrição informada';
+                const descricaoLinhas = doc.splitTextToSize(descricao, contentWidth);
+                
+                for (const linha of descricaoLinhas) {
+                    if (y > pageHeight - 20) {
+                        doc.addPage();
+                        y = 15;
+                    }
+                    doc.text(linha, margin, y);
+                    y += 5;
+                }
+                y += 5;
+                
+                // Observações
+                if (y > pageHeight - 20) {
+                    doc.addPage();
+                    y = 15;
+                }
+                doc.setFontSize(11);
+                doc.setTextColor(0, 58, 107);
+                doc.text('Observações:', margin, y);
+                y += 6;
+                
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                const obs = rdo.observacoes || 'Nenhuma observação';
+                const obsLinhas = doc.splitTextToSize(obs, contentWidth);
+                for (const linha of obsLinhas) {
+                    if (y > pageHeight - 20) {
+                        doc.addPage();
+                        y = 15;
+                    }
+                    doc.text(linha, margin, y);
+                    y += 5;
+                }
+                y += 5;
+                
+                // Atividades
+                if (y > pageHeight - 20) {
+                    doc.addPage();
+                    y = 15;
+                }
+                doc.setFontSize(11);
+                doc.setTextColor(0, 58, 107);
+                doc.text('Atividades Realizadas:', margin, y);
+                y += 6;
+                
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                let temAtividade = false;
+                for (let n = 1; n <= 3; n++) {
+                    const atividadeId = rdo[`atividade${n}`];
+                    const qtd = rdo[`qtd${n}`];
+                    if (atividadeId && qtd) {
+                        const tarefa = DB.tarefas.find(t => t.id == atividadeId);
+                        if (tarefa) {
+                            temAtividade = true;
+                            if (y > pageHeight - 15) {
+                                doc.addPage();
+                                y = 15;
+                            }
+                            doc.text(`• ${tarefa.codigo}: ${tarefa.descricao} - Quantidade: ${qtd} ${tarefa.unidade || ''}`, margin, y);
+                            y += 5;
+                        }
+                    }
+                }
+                if (!temAtividade) {
+                    doc.text('Nenhuma atividade registrada', margin, y);
+                    y += 5;
+                }
+                y += 5;
+                
+                // Assinaturas
+                if (y > pageHeight - 20) {
+                    doc.addPage();
+                    y = 15;
+                }
+                doc.setFontSize(11);
+                doc.setTextColor(0, 58, 107);
+                doc.text('Assinaturas:', margin, y);
+                y += 6;
+                
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                if (rdo.signatures) {
+                    STATUS_ORDER.forEach(st => {
+                        const sig = rdo.signatures[st];
+                        if (sig) {
+                            if (y > pageHeight - 15) {
+                                doc.addPage();
+                                y = 15;
+                            }
+                            doc.text(`${statusLabel(st)}: ${sig.name} - ${new Date(sig.at).toLocaleString('pt-BR')}`, margin, y);
+                            y += 5;
+                        }
+                    });
+                }
+                y += 5;
+                
+                // FOTOS - Agora incluídas no PDF
+                if (rdo.photos && rdo.photos.length > 0) {
+                    if (y > pageHeight - 30) {
+                        doc.addPage();
+                        y = 15;
+                    }
+                    
+                    doc.setFontSize(11);
+                    doc.setTextColor(0, 58, 107);
+                    doc.text('Fotos e Evidências:', margin, y);
+                    y += 10;
+                    
+                    // Tentar adicionar até 4 fotos por página
+                    let fotosPorLinha = 2;
+                    let tamanhoFoto = (contentWidth - 10) / fotosPorLinha;
+                    let linhaAtual = 0;
+                    let colAtual = 0;
+                    
+                    for (let j = 0; j < rdo.photos.length; j++) {
+                        const foto = rdo.photos[j];
+                        
+                        try {
+                            const rec = await idbGetFile(foto.key);
+                            if (rec && rec.blob && foto.type.startsWith('image/')) {
+                                // Converter blob para base64
+                                const base64 = await new Promise((resolve) => {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => resolve(reader.result);
+                                    reader.readAsDataURL(rec.blob);
+                                });
+                                
+                                // Calcular posição
+                                let xPos = margin + (colAtual * (tamanhoFoto + 5));
+                                let yPos = y + (linhaAtual * (tamanhoFoto + 15));
+                                
+                                // Verificar se precisa de nova página
+                                if (yPos + tamanhoFoto > pageHeight - 10) {
+                                    doc.addPage();
+                                    y = 15;
+                                    linhaAtual = 0;
+                                    colAtual = 0;
+                                    xPos = margin;
+                                    yPos = y;
+                                }
+                                
+                                // Adicionar imagem
+                                try {
+                                    doc.addImage(base64, 'JPEG', xPos, yPos, tamanhoFoto, tamanhoFoto * 0.75);
+                                    
+                                    // Legenda
+                                    doc.setFontSize(8);
+                                    doc.setTextColor(100, 100, 100);
+                                    let nomeCurto = foto.name.length > 20 ? foto.name.substring(0, 17) + '...' : foto.name;
+                                    doc.text(nomeCurto, xPos, yPos + tamanhoFoto * 0.75 + 4);
+                                } catch (imgErr) {
+                                    console.error('Erro ao adicionar imagem ao PDF:', imgErr);
+                                }
+                                
+                                // Avançar coluna/linha
+                                colAtual++;
+                                if (colAtual >= fotosPorLinha) {
+                                    colAtual = 0;
+                                    linhaAtual++;
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Erro ao processar foto para PDF:', e);
+                        }
+                    }
+                    
+                    y += (linhaAtual + 1) * (tamanhoFoto + 20);
+                }
+            }
+            
+            doc.save(`RDOs_${new Date().toISOString().slice(0,10)}.pdf`);
+            showToast('PDF gerado com sucesso!');
+        }
+
+        function gerarRelatorioPDF() {
+            const inicio = document.getElementById('dashboardDataInicio')?.value;
+            const fim = document.getElementById('dashboardDataFim')?.value;
+            
+            let rdosParaPDF = [...DB.rdos];
+            
+            if (inicio) {
+                rdosParaPDF = rdosParaPDF.filter(r => r.data && r.data >= inicio);
+            }
+            if (fim) {
+                rdosParaPDF = rdosParaPDF.filter(r => r.data && r.data <= fim);
+            }
+            
+            // Limitar a 20 RDOs para não travar
+            rdosParaPDF = rdosParaPDF.slice(-20).reverse();
+            
+            if (rdosParaPDF.length === 0) {
+                showToast('Nenhum RDO encontrado no período', 'error');
+                return;
+            }
+            
+            gerarPDFMultiplos(rdosParaPDF);
+        }
+
+        function gerarRelatorioPDFFiltrado() {
+            const dataInicio = document.getElementById('relDataInicio')?.value || '';
+            const dataFim = document.getElementById('relDataFim')?.value || '';
+            const obraId = document.getElementById('relObra')?.value || '';
+            const status = document.getElementById('relStatus')?.value || '';
+            
+            let rdosFiltrados = [...DB.rdos];
+            
+            if (dataInicio) {
+                rdosFiltrados = rdosFiltrados.filter(r => r.data && r.data >= dataInicio);
+            }
+            if (dataFim) {
+                rdosFiltrados = rdosFiltrados.filter(r => r.data && r.data <= dataFim);
+            }
+            if (obraId) {
+                rdosFiltrados = rdosFiltrados.filter(r => r.obraId == obraId);
+            }
+            if (status) {
+                rdosFiltrados = rdosFiltrados.filter(r => r.status === status);
+            }
+            
+            if (rdosFiltrados.length === 0) {
+                showToast('Nenhum RDO encontrado com os filtros', 'error');
+                return;
+            }
+            
+            // Limitar a 20 RDOs
+            if (rdosFiltrados.length > 20) {
+                if (!confirm(`Foram encontrados ${rdosFiltrados.length} RDOs. Gerar PDF pode demorar. Deseja continuar?`)) {
+                    return;
+                }
+            }
+            
+            gerarPDFMultiplos(rdosFiltrados);
+        }
+
+        function filtrarDashboard() {
+            const inicio = document.getElementById('dashboardDataInicio').value;
+            const fim = document.getElementById('dashboardDataFim').value;
+            
+            // Filtrar RDOs para o gráfico
+            let rdosFiltrados = [...DB.rdos];
+            
+            if (inicio) {
+                rdosFiltrados = rdosFiltrados.filter(r => r.data && r.data >= inicio);
+            }
+            if (fim) {
+                rdosFiltrados = rdosFiltrados.filter(r => r.data && r.data <= fim);
+            }
+            
+            const aprovados = rdosFiltrados.filter(r => r.status === 'aprovado').length;
+            const incorridos = rdosFiltrados.filter(r => (r.status||'incorrido') === 'incorrido').length;
+            const conferidos = rdosFiltrados.filter(r => r.status === 'conferido').length;
+            const consolidados = rdosFiltrados.filter(r => r.status === 'consolidado').length;
+            
+            // Atualizar gráfico
+            const canvas = document.getElementById('chartStatus');
+            if (canvas) {
+                const chart = Chart.getChart(canvas);
+                if (chart) {
+                    chart.data.datasets[0].data = [aprovados, consolidados, conferidos, incorridos];
+                    chart.update();
+                }
+            }
+            
+            showToast('Dashboard filtrado');
+        }
+
+        // ==================== IMPORTAÇÃO XLSX (abas do RDOWEB) ====================
+        function normalizeKey(s){
+            return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        }
+        function sheetFindHeaderRow(ws, mustKeys){
+            // varre primeiras 50 linhas
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            const maxR = Math.min(range.e.r, 60);
+            for(let r=0;r<=maxR;r++){
+                const row=[];
+                for(let c=0;c<=Math.min(range.e.c,40);c++){
+                    const cell = ws[XLSX.utils.encode_cell({r,c})];
+                    row.push(cell ? String(cell.v).trim() : '');
+                }
+                const norm = row.map(normalizeKey);
+                const hit = mustKeys.filter(k=> norm.some(v=>v===k || v.includes(k))).length;
+                const nonEmpty = row.filter(v=>v).length;
+                if(hit>=Math.min(3,mustKeys.length) && nonEmpty>=3){
+                    return r; // 0-based
+                }
+            }
+            return 0;
+        }
+        function sheetToObjects(ws, headerRow0){
+            const json = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''});
+            const header = json[headerRow0].map(h=>String(h||'').trim());
+            const out=[];
+            for(let i=headerRow0+1;i<json.length;i++){
+                const row=json[i];
+                if(!row || row.every(v=>String(v||'').trim()==='')) continue;
+                const obj={};
+                for(let c=0;c<header.length;c++){
+                    const k=header[c] || ('COL'+c);
+                    obj[k]=row[c];
+                }
+                out.push(obj);
+            }
+            return {header, rows:out};
+        }
+        function importFromWorkbook(wb){
+            // Obras (formato Item/Descrição)
+            if(wb.Sheets['1.CADASTRO DE OBRA']){
+                const ws=wb.Sheets['1.CADASTRO DE OBRA'];
+                const arr = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''});
+                const kv={};
+                for(const row of arr){
+                    const item = String(row[1]||'').trim();
+                    const val = row[2];
+                    if(!item) continue;
+                    kv[item]=val;
+                }
+                const sigla = kv[Object.keys(kv).find(k=>k.toLowerCase().includes('sigla da obra'))] || '';
+                const nome = kv[Object.keys(kv).find(k=>k.toLowerCase().includes('descrição da obra'))] || '';
+                const cliente = kv[Object.keys(kv).find(k=>k.toLowerCase().includes('cliente final'))] || 'SAMARCO';
+                const inicio = kv[Object.keys(kv).find(k=>k.toLowerCase().includes('data início'))] || '';
+                const termino = kv[Object.keys(kv).find(k=>k.toLowerCase().includes('data término'))] || '';
+                const gestor = kv[Object.keys(kv).find(k=>k.toLowerCase().includes('assinante construtora'))] || '';
+                const emitente = kv[Object.keys(kv).find(k=>k.toLowerCase().includes('empresa responsável'))] || '';
+                const localidade = kv[Object.keys(kv).find(k=>k.toLowerCase().includes('localidade'))] || '';
+                if(sigla || nome){
+                    DB.obras = [{
+                        id: Date.now(),
+                        sigla: String(sigla||'').trim() || 'OBRA',
+                        nome: String(nome||'').trim() || 'Obra',
+                        gestor: String(gestor||'').trim(),
+                        cliente: String(cliente||'').trim() || 'SAMARCO',
+                        inicio: inicio ? toIsoDate(inicio) : '',
+                        termino: termino ? toIsoDate(termino) : '',
+                        emitente: String(emitente||'').trim(),
+                        localidade: String(localidade||'').trim(),
+                        raw: kv
+                    }];
+                }
+            }
+
+            // Tarefas
+            if(wb.Sheets['3.TAREFAS (Cronograma ou EAP)']){
+                const ws=wb.Sheets['3.TAREFAS (Cronograma ou EAP)'];
+                const hdr=sheetFindHeaderRow(ws, ['unidade','codigo','descricao','nivel','ativo','area','inicio','termino','versao']);
+                const {rows} = sheetToObjects(ws, hdr);
+                DB.tarefas = rows.map((r,i)=>({
+                    id: Date.now()+i,
+                    unidade: r['UNIDADE'] || r['unidade'] || '',
+                    codigo: r['CÓDIDO DA EAP/WBS'] || r['CODIGO DA EAP/WBS'] || r['CÓDIGO DA EAP/WBS'] || r['CÓDIGO'] || r['codigo'] || '',
+                    nivel: r['NIVEL'] || r['nível'] || r['nivel'] || '',
+                    descricao: r['DESCRIÇÃO DA ATIVIDADE / TAREFA'] || r['DESCRICAO DA ATIVIDADE / TAREFA'] || r['DESCRIÇÃO'] || r['descricao'] || '',
+                    ativo: String(r['ATIVO']||'1').trim() !== '0',
+                    area: r['ÁREA'] || r['AREA'] || r['area'] || '',
+                    inicio: r['INICIO'] ? toIsoDate(r['INICIO']) : '',
+                    termino: r['TÉRMINO'] ? toIsoDate(r['TÉRMINO']) : '',
+                    versao: r['VERSÃO'] || r['VERSAO'] || ''
+                })).filter(t=>t.codigo || t.descricao);
+            }
+
+            // Cargos
+            if(wb.Sheets['4a.CARGOS']){
+                const ws=wb.Sheets['4a.CARGOS'];
+                const hdr=sheetFindHeaderRow(ws, ['cargo','direto','indireto','cbo']);
+                const {rows} = sheetToObjects(ws, hdr);
+                DB.cargos = rows.map((r,i)=>({
+                    id: Date.now()+i,
+                    nome: (r['Cargo']||r['CARGO']||'').trim(),
+                    tipo: (r['Direto/Indireto']||r['DIRETO/INDIRETO']||'').trim() || 'MOD',
+                    cbo: (r['CBO']||'').trim()
+                })).filter(c=>c.nome);
+            }
+
+            // Efetivo
+            if(wb.Sheets['4b.EFETIVO']){
+                const ws=wb.Sheets['4b.EFETIVO'];
+                const hdr=sheetFindHeaderRow(ws, ['empresa','nome','matricula','admissao']);
+                const {rows} = sheetToObjects(ws, hdr);
+                DB.efetivo = rows.map((r,i)=>({
+                    id: Date.now()+i,
+                    empresa: (r['Empresa']||r['EMPRESA']||'').trim(),
+                    nome: (r['NOME FUNCIONÁRIO']||r['NOME FUNCIONARIO']||r['NOME']||'').trim(),
+                    cargo: (r['CARGO REGISTRADO']||r['CARGO']||'').trim(),
+                    tipo: (r['Direto/Indireto']||r['DIRETO/INDIRETO']||'').trim(),
+                    matricula: (r['MATRICULA']||r['Matrícula']||'').trim(),
+                    admissao: r['ADMISSÃO']? toIsoDate(r['ADMISSÃO']) : (r['ADMISSÃO ']? toIsoDate(r['ADMISSÃO ']) : ''),
+                    demissao: r['DEMISSÃO']? toIsoDate(r['DEMISSÃO']) : '',
+                    horaEntrada: (r['HORÁRIO ENTRADA']||r['HORARIO ENTRADA']||'').trim(),
+                    horaSaida: (r['HORARIO SAÍDA']||r['HORARIO SAIDA']||'').trim(),
+                    cargaHoraria: (r['CARGA HOR. PADRÃO']||r['CARGA HOR. PADRAO']||'').trim()
+                })).filter(e=>e.nome);
+            }
+
+            // Equipamentos
+            if(wb.Sheets['5.EQUIPAMENTOS']){
+                const ws=wb.Sheets['5.EQUIPAMENTOS'];
+                const hdr=sheetFindHeaderRow(ws, ['descricao','empresa','tag','area']);
+                const {rows} = sheetToObjects(ws, hdr);
+                DB.equipamentos = rows.map((r,i)=>({
+                    id: Date.now()+i,
+                    descricao: (r['Descrição']||r['DESCRIÇÃO']||r['DESCRICAO']||'').trim(),
+                    empresa: (r['Empresa que utiliza']||r['EMPRESA QUE UTILIZA']||r['Empresa']||'').trim(),
+                    tag: (r['TAG / Identificador único2']||r['TAG / Identificador unico2']||r['TAG']||'').trim(),
+                    fabricante: (r['Fabricante']||'').trim(),
+                    contrato: (r['Contrato (locação)']||r['Contrato (locacao)']||'').trim(),
+                    unidade: (r['Unidade de medida']||'').trim(),
+                    capacidade: (r['Capacidade']||'').trim(),
+                    area: (r['Área utilizadora']||r['Area utilizadora']||r['ÁREA']||r['AREA']||'').trim()
+                })).filter(e=>e.descricao || e.tag);
+            }
+
+            // Usuários
+            if(wb.Sheets['2.USUÁRIOS']){
+                const ws=wb.Sheets['2.USUÁRIOS'];
+                const hdr=sheetFindHeaderRow(ws, ['nome','nivel','area','empresa','email']);
+                const {rows} = sheetToObjects(ws, hdr);
+                DB.usuarios = rows.map((r,i)=>({
+                    id: Date.now()+i,
+                    nome: (r['Nome']||r['NOME']||'').trim(),
+                    nivel: (r['NIVEL']||r['NÍVEL']||'').trim(),
+                    area: (r['Área']||r['AREA']||'').trim(),
+                    empresa: (r['Empresa']||'').trim(),
+                    siglaEmpresa: (r['Sigla da empresa']||'').trim(),
+                    email: (r['Email']||r['E-mail']||'').trim(),
+                    acesso: (r['Ação/Níveis de acesso']||'').trim()
+                })).filter(u=>u.nome);
+            }
+
+            // Paralisações
+            if(wb.Sheets['6.PARALISAÇÕES']){
+                const ws=wb.Sheets['6.PARALISAÇÕES'];
+                const hdr=sheetFindHeaderRow(ws, ['paralisacao','superveniencia','reivindicavel']);
+                const {rows} = sheetToObjects(ws, hdr);
+                DB.paralisacoes = rows.map((r,i)=>({
+                    id: Date.now()+i,
+                    descricao: (r['Paralisação']||r['PARALISAÇÃO']||r['PARALISACAO']||'').trim(),
+                    superveniencia: (r['Indicar superveniencia']||r['SUPER']||'').trim(),
+                    reivindicavel: (r['Reinvidicável']||r['Reivindicável']||'').trim()
+                })).filter(p=>p.descricao);
+            }
+
+            persist();
+            showToast('Importação Excel concluída (abas atualizadas).');
+        }
+
+        function toIsoDate(v){
+            // aceita dd/mm/aaaa, aaaa-mm-dd, Date
+            const s=String(v||'').trim();
+            if(!s) return '';
+            if(/\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+            const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+            if(m){
+                const d=m[1].padStart(2,'0');
+                const mo=m[2].padStart(2,'0');
+                const y=m[3].length===2 ? ('20'+m[3]) : m[3];
+                return `${y}-${mo}-${d}`;
+            }
+            const dt=new Date(s);
+            if(!isNaN(dt.getTime())) return dt.toISOString().slice(0,10);
+            return '';
+        }
+
+        // ==================== BACKUP FUNCTIONS ====================
+        function exportBackup() {
+            const selectedIds = getSelectedBackupRdoIds();
+            const rdosSelecionados = selectedIds.length ? DB.rdos.filter(r => selectedIds.includes(String(r.id))) : [];
+            if (!rdosSelecionados.length) {
+                showToast('Selecione ao menos um RDO para exportar.', 'error');
+                return;
+            }
+            const data = {
+                obras: DB.obras,
+                tarefas: DB.tarefas,
+                cargos: DB.cargos,
+                efetivo: DB.efetivo,
+                equipamentos: DB.equipamentos,
+                usuarios: DB.usuarios,
+                paralisacoes: DB.paralisacoes,
+                rdos: rdosSelecionados,
+                supabase: DB.supabase,
+                exportDate: new Date().toISOString(),
+                version: '1.1',
+                exportScope: 'selected-rdos'
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `samarcordo_naza_auditoria_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            LS_SAFE.set('lastBackup', new Date().toISOString());
+            showToast(`Backup exportado com ${rdosSelecionados.length} RDO(s)!`);
+        }
+
+        function exportExcel() {
+            if(typeof XLSX==='undefined'){ showToast('Excel indisponível (offline). Use Backup JSON.', 'error'); return; }
+            const selectedIds = getSelectedBackupRdoIds();
+            const rdosSelecionados = selectedIds.length ? DB.rdos.filter(r => selectedIds.includes(String(r.id))) : [];
+            if (!rdosSelecionados.length) {
+                showToast('Selecione ao menos um RDO para exportar.', 'error');
+                return;
+            }
+            const wb = XLSX.utils.book_new();
+            const obrasSheet = XLSX.utils.json_to_sheet(DB.obras);
+            XLSX.utils.book_append_sheet(wb, obrasSheet, 'Obras');
+            const tarefasSheet = XLSX.utils.json_to_sheet(DB.tarefas);
+            XLSX.utils.book_append_sheet(wb, tarefasSheet, 'Tarefas');
+            const rdosSheet = XLSX.utils.json_to_sheet(rdosSelecionados);
+            XLSX.utils.book_append_sheet(wb, rdosSheet, 'RDOs');
+            XLSX.writeFile(wb, `samarcordo_naza_auditoria_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showToast(`Excel exportado com ${rdosSelecionados.length} RDO(s)!`);
+        }
+
+        function importData() {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showToast('Selecione um arquivo para importar', 'error');
+                return;
+            }
+            const name = (file.name||'').toLowerCase();
+
+            if(name.endsWith('.json')){
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.obras) DB.obras = data.obras;
+                        if (data.tarefas) DB.tarefas = data.tarefas;
+                        if (data.cargos) DB.cargos = data.cargos;
+                        if (data.efetivo) DB.efetivo = data.efetivo;
+                        if (data.equipamentos) DB.equipamentos = data.equipamentos;
+                        if (data.usuarios) DB.usuarios = data.usuarios;
+                        if (data.paralisacoes) DB.paralisacoes = data.paralisacoes;
+                        if (data.rdos) DB.rdos = data.rdos;
+                        if (data.supabase) DB.supabase = data.supabase;
+                        persist();
+                        showToast('Dados importados com sucesso!');
+                        const activeView = document.querySelector('.menu-item.active')?.dataset.view;
+                        if (activeView) loadView(activeView);
+                    } catch (error) {
+                        console.error(error);
+                        showToast('Erro ao importar JSON', 'error');
+                    }
+                };
+                reader.readAsText(file);
+                return;
+            }
+
+            if(name.endsWith('.xlsx')){
+                if(typeof XLSX==='undefined'){ showToast('Excel indisponível (offline). Use Backup JSON.', 'error'); return; }
+                const reader = new FileReader();
+                reader.onload = function(e){
+                    try{
+                        const data = new Uint8Array(e.target.result);
+                        const wb = XLSX.read(data, {type:'array'});
+                        importFromWorkbook(wb);
+                        const activeView = document.querySelector('.menu-item.active')?.dataset.view;
+                        if (activeView) loadView(activeView);
+                    }catch(err){
+                        console.error(err);
+                        showToast('Erro ao importar XLSX', 'error');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+                return;
+            }
+
+            showToast('Formato não suportado. Use .json ou .xlsx', 'error');
+        }
+
+        function importJSON() {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showToast('Selecione um arquivo JSON para importar', 'error');
+                return;
+            }
+
+            if (!file.name.toLowerCase().endsWith('.json')) {
+                showToast('Por favor, selecione um arquivo JSON', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.obras) DB.obras = data.obras;
+                    if (data.tarefas) DB.tarefas = data.tarefas;
+                    if (data.cargos) DB.cargos = data.cargos;
+                    if (data.efetivo) DB.efetivo = data.efetivo;
+                    if (data.equipamentos) DB.equipamentos = data.equipamentos;
+                    if (data.usuarios) DB.usuarios = data.usuarios;
+                    if (data.paralisacoes) DB.paralisacoes = data.paralisacoes;
+                    if (data.rdos) DB.rdos = data.rdos;
+                    if (data.supabase) DB.supabase = data.supabase;
+                    persist();
+                    showToast('JSON importado com sucesso!');
+                    const activeView = document.querySelector('.menu-item.active')?.dataset.view;
+                    if (activeView) loadView(activeView);
+                } catch (error) {
+                    console.error(error);
+                    showToast('Erro ao importar JSON: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function saveSupabaseConfig(){
+            DB.supabase = DB.supabase || {url:'',key:'',enabled:false};
+            DB.supabase.url = (document.getElementById('sbUrl')?.value||'').trim();
+            DB.supabase.key = (document.getElementById('sbKey')?.value||'').trim();
+            DB.supabase.enabled = (document.getElementById('sbEnabled')?.value==='1');
+            persist();
+            showToast('Supabase configurado.');
+        }
+
+        function saveConfig() {
+            const userName = document.getElementById('configUserName').value;
+            document.getElementById('userName').innerText = userName;
+            showToast('Configurações salvas!');
+        }
+
+        // ==================== INICIALIZAÇÃO ====================
+        (async function(){ 
+            await bootstrapDb(); 
+            initData(); 
+            loadView('dashboard'); 
+        })();
+    </script>
+</body>
+</html>
